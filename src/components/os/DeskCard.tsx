@@ -75,9 +75,7 @@ export function DeskCard({
       >
         <PixelDesk
           code={employee.code}
-          accent={employee.accent}
           status={employee.status}
-          config={profile.pixelConfig}
           personaName={profile.name}
         />
       </div>
