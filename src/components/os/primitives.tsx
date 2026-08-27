@@ -1,0 +1,227 @@
+import type { ReactNode } from "react";
+import { cn } from "@/lib/utils";
+import { STATUS_LABEL, type EmployeeStatus } from "@/lib/company-data";
+
+export function Panel({
+  className,
+  children,
+  ...rest
+}: React.HTMLAttributes<HTMLDivElement>) {
+  return (
+    <div className={cn("panel p-5", className)} {...rest}>
+      {children}
+    </div>
+  );
+}
+
+export function SectionTitle({
+  title,
+  hint,
+  action,
+}: {
+  title: string;
+  hint?: string;
+  action?: ReactNode;
+}) {
+  return (
+    <div className="mb-4 flex items-end justify-between gap-4">
+      <div>
+        <h2 className="label-caps">{title}</h2>
+        {hint ? <p className="mt-1 text-sm text-muted-foreground">{hint}</p> : null}
+      </div>
+      {action}
+    </div>
+  );
+}
+
+export function PageHeader({
+  eyebrow,
+  title,
+  description,
+  actions,
+}: {
+  eyebrow?: string;
+  title: string;
+  description?: string;
+  actions?: ReactNode;
+}) {
+  return (
+    <header className="mb-7 flex flex-wrap items-end justify-between gap-4">
+      <div>
+        {eyebrow ? <p className="label-caps mb-2">{eyebrow}</p> : null}
+        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{title}</h1>
+        {description ? (
+          <p className="mt-2 max-w-2xl text-sm text-muted-foreground">{description}</p>
+        ) : null}
+      </div>
+      {actions ? <div className="flex flex-wrap items-center gap-2">{actions}</div> : null}
+    </header>
+  );
+}
+
+const STATUS_TONE: Record<EmployeeStatus, string> = {
+  IDLE: "var(--muted-foreground)",
+  THINKING: "var(--info)",
+  WORKING: "var(--primary)",
+  WAITING: "var(--muted-foreground)",
+  REVIEW: "var(--emp-b)",
+  APPROVAL_REQUIRED: "var(--warning)",
+  COMPLETED: "var(--success)",
+  ERROR: "var(--destructive)",
+};
+
+export function StatusPill({
+  status,
+  className,
+}: {
+  status: EmployeeStatus;
+  className?: string;
+}) {
+  const tone = STATUS_TONE[status];
+  const live = status === "WORKING" || status === "THINKING";
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-2 rounded-full border px-2.5 py-1 text-[11px] font-medium",
+        className,
+      )}
+      style={{
+        borderColor: `color-mix(in oklab, ${tone} 40%, transparent)`,
+        background: `color-mix(in oklab, ${tone} 12%, transparent)`,
+        color: tone,
+      }}
+    >
+      <span
+        className={cn("size-1.5 rounded-full", live && "animate-pulse")}
+        style={{ background: tone }}
+      />
+      {status.replace("_", " ")}
+      <span className="text-muted-foreground">{STATUS_LABEL[status]}</span>
+    </span>
+  );
+}
+
+export function Tag({
+  children,
+  tone = "var(--primary)",
+  className,
+}: {
+  children: ReactNode;
+  tone?: string;
+  className?: string;
+}) {
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center rounded-md border px-2 py-0.5 text-[11px] font-medium",
+        className,
+      )}
+      style={{
+        borderColor: `color-mix(in oklab, ${tone} 38%, transparent)`,
+        background: `color-mix(in oklab, ${tone} 12%, transparent)`,
+        color: tone,
+      }}
+    >
+      {children}
+    </span>
+  );
+}
+
+export function Meter({
+  value,
+  tone = "var(--primary)",
+  className,
+  label,
+}: {
+  value: number;
+  tone?: string;
+  className?: string;
+  label?: string;
+}) {
+  return (
+    <div className={className}>
+      {label ? (
+        <div className="mb-1.5 flex items-center justify-between text-[11px] text-muted-foreground">
+          <span>{label}</span>
+          <span className="num-display text-foreground">{value}%</span>
+        </div>
+      ) : null}
+      <div
+        className="h-1.5 w-full overflow-hidden rounded-full bg-secondary"
+        role="progressbar"
+        aria-valuenow={value}
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-label={label ?? "progress"}
+      >
+        <div
+          className="h-full rounded-full transition-[width] duration-700"
+          style={{
+            width: `${Math.min(100, Math.max(0, value))}%`,
+            background: `linear-gradient(90deg, color-mix(in oklab, ${tone} 65%, transparent), ${tone})`,
+          }}
+        />
+      </div>
+    </div>
+  );
+}
+
+export function Delta({ value }: { value: number }) {
+  const up = value >= 0;
+  return (
+    <span
+      className="num-display text-xs"
+      style={{ color: up ? "var(--success)" : "var(--destructive)" }}
+    >
+      {up ? "+" : ""}
+      {value.toFixed(1)}%
+    </span>
+  );
+}
+
+export function EmptyState({
+  title,
+  body,
+  actionLabel,
+  onAction,
+}: {
+  title: string;
+  body: string;
+  actionLabel?: string;
+  onAction?: () => void;
+}) {
+  return (
+    <div className="panel flex flex-col items-center gap-3 px-6 py-12 text-center">
+      <div className="size-10 rounded-full border border-border bg-secondary" />
+      <h3 className="text-sm font-semibold">{title}</h3>
+      <p className="max-w-sm text-sm text-muted-foreground">{body}</p>
+      {actionLabel ? (
+        <button
+          onClick={onAction}
+          className="mt-2 rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground transition-opacity hover:opacity-90"
+        >
+          {actionLabel}
+        </button>
+      ) : null}
+    </div>
+  );
+}
+
+export function SimulationBadge({ className }: { className?: string }) {
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-[10px] font-semibold tracking-[0.14em]",
+        className,
+      )}
+      style={{
+        borderColor: "color-mix(in oklab, var(--warning) 40%, transparent)",
+        background: "color-mix(in oklab, var(--warning) 12%, transparent)",
+        color: "var(--warning)",
+      }}
+    >
+      <span className="size-1.5 rounded-full bg-current" />
+      SIMULATION
+    </span>
+  );
+}

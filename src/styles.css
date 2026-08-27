@@ -1,0 +1,404 @@
+@import "tailwindcss" source(none);
+@source "../src";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/*
+ * S-QUEST COMPANY — AI COMPANY OPERATING SYSTEM
+ * Dark-first executive design system. All colors are oklch tokens.
+ */
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --radius-3xl: calc(var(--radius) + 12px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-ring-offset-background: var(--background);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-info: var(--info);
+  --color-emp-a: var(--emp-a);
+  --color-emp-b: var(--emp-b);
+  --color-emp-c: var(--emp-c);
+  --color-emp-d: var(--emp-d);
+  --color-emp-e: var(--emp-e);
+  --color-emp-f: var(--emp-f);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --font-sans:
+    "Inter", ui-sans-serif, system-ui, "Noto Sans JP", sans-serif;
+  --font-mono: ui-monospace, "SFMono-Regular", "JetBrains Mono", monospace;
+}
+
+:root {
+  --radius: 0.875rem;
+
+  --background: oklch(0.16 0.014 264);
+  --foreground: oklch(0.97 0.004 264);
+  --surface: oklch(0.2 0.016 264);
+  --surface-2: oklch(0.245 0.018 264);
+  --card: oklch(0.203 0.016 264);
+  --card-foreground: oklch(0.97 0.004 264);
+  --popover: oklch(0.21 0.017 264);
+  --popover-foreground: oklch(0.97 0.004 264);
+
+  --primary: oklch(0.72 0.155 195);
+  --primary-foreground: oklch(0.16 0.014 264);
+  --secondary: oklch(0.26 0.018 264);
+  --secondary-foreground: oklch(0.95 0.004 264);
+  --muted: oklch(0.25 0.016 264);
+  --muted-foreground: oklch(0.68 0.017 264);
+  --accent: oklch(0.29 0.024 264);
+  --accent-foreground: oklch(0.97 0.004 264);
+  --destructive: oklch(0.62 0.2 22);
+  --destructive-foreground: oklch(0.98 0.003 264);
+
+  --success: oklch(0.72 0.16 155);
+  --warning: oklch(0.78 0.15 78);
+  --info: oklch(0.68 0.14 250);
+
+  --border: oklch(0.3 0.016 264);
+  --input: oklch(0.3 0.016 264);
+  --ring: oklch(0.72 0.155 195);
+
+  --emp-a: oklch(0.68 0.15 250);
+  --emp-b: oklch(0.66 0.17 300);
+  --emp-c: oklch(0.68 0.18 12);
+  --emp-d: oklch(0.74 0.15 55);
+  --emp-e: oklch(0.73 0.16 152);
+  --emp-f: oklch(0.75 0.13 195);
+
+  --chart-1: oklch(0.72 0.155 195);
+  --chart-2: oklch(0.66 0.17 300);
+  --chart-3: oklch(0.74 0.15 55);
+  --chart-4: oklch(0.73 0.16 152);
+  --chart-5: oklch(0.68 0.15 250);
+
+  --sidebar: oklch(0.18 0.015 264);
+  --sidebar-foreground: oklch(0.93 0.005 264);
+  --sidebar-primary: oklch(0.72 0.155 195);
+  --sidebar-primary-foreground: oklch(0.16 0.014 264);
+  --sidebar-accent: oklch(0.26 0.02 264);
+  --sidebar-accent-foreground: oklch(0.97 0.004 264);
+  --sidebar-border: oklch(0.28 0.016 264);
+  --sidebar-ring: oklch(0.72 0.155 195);
+
+  --gradient-core: radial-gradient(
+    circle at 50% 45%,
+    color-mix(in oklab, var(--primary) 85%, white) 0%,
+    var(--primary) 32%,
+    color-mix(in oklab, var(--emp-a) 70%, transparent) 62%,
+    transparent 78%
+  );
+  --gradient-surface: linear-gradient(
+    160deg,
+    color-mix(in oklab, var(--surface) 92%, var(--primary)) 0%,
+    var(--surface) 55%,
+    oklch(0.185 0.015 264) 100%
+  );
+  --shadow-elevated: 0 24px 60px -28px oklch(0 0 0 / 0.75);
+  --shadow-glow: 0 0 60px -10px color-mix(in oklab, var(--primary) 45%, transparent);
+}
+
+.dark {
+  color-scheme: dark;
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+
+  html {
+    color-scheme: dark;
+  }
+
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    background-image:
+      radial-gradient(
+        900px 500px at 12% -10%,
+        color-mix(in oklab, var(--primary) 12%, transparent),
+        transparent
+      ),
+      radial-gradient(
+        700px 420px at 92% 0%,
+        color-mix(in oklab, var(--emp-b) 10%, transparent),
+        transparent
+      );
+    background-attachment: fixed;
+  }
+
+  ::selection {
+    background: color-mix(in oklab, var(--primary) 35%, transparent);
+  }
+}
+
+@utility panel {
+  background: var(--gradient-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-elevated);
+}
+
+@utility label-caps {
+  font-size: 0.6875rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-muted-foreground);
+  font-weight: 600;
+}
+
+@utility num-display {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  font-weight: 600;
+}
+
+@keyframes core-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.9;
+  }
+  50% {
+    transform: scale(1.045);
+    opacity: 1;
+  }
+}
+
+@keyframes core-orbit {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes wave {
+  0%,
+  100% {
+    transform: scaleY(0.35);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+}
+
+@utility animate-core-pulse {
+  animation: core-pulse 4.5s ease-in-out infinite;
+}
+
+@utility animate-core-orbit {
+  animation: core-orbit 18s linear infinite;
+}
+
+/* ── Pixel office animations ── */
+@keyframes pixel-idle {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-1px);
+  }
+}
+
+@keyframes pixel-type {
+  0%,
+  100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  25% {
+    transform: translateY(-1.5px) rotate(-1.5deg);
+  }
+  75% {
+    transform: translateY(-0.5px) rotate(1.5deg);
+  }
+}
+
+@keyframes pixel-screen {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes pixel-blink {
+  0%,
+  92%,
+  100% {
+    opacity: 1;
+  }
+  95% {
+    opacity: 0;
+  }
+}
+
+@keyframes line-flow {
+  from {
+    stroke-dashoffset: 24;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes ping-soft {
+  0% {
+    transform: scale(0.6);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(2.2);
+    opacity: 0;
+  }
+}
+
+@utility animate-pixel-idle {
+  animation: pixel-idle 2.6s ease-in-out infinite;
+}
+
+@utility animate-pixel-type {
+  animation: pixel-type 0.42s ease-in-out infinite;
+}
+
+@utility animate-pixel-screen {
+  animation: pixel-screen 1.6s ease-in-out infinite;
+}
+
+@utility animate-pixel-blink {
+  animation: pixel-blink 5s steps(1, end) infinite;
+}
+
+@utility animate-line-flow {
+  animation: line-flow 1s linear infinite;
+}
+
+@utility animate-ping-soft {
+  animation: ping-soft 1.8s ease-out infinite;
+}
+
+/* ── Desk status auras (working = fire / idle = resting) ── */
+@keyframes aura-work {
+  0%,
+  100% {
+    opacity: 0.65;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes aura-idle {
+  0%,
+  100% {
+    opacity: 0.45;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
+@keyframes ember-rise {
+  0% {
+    transform: translateY(0) scale(0.7);
+    opacity: 0;
+  }
+  18% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-38px) scale(1.05);
+    opacity: 0;
+  }
+}
+
+@keyframes zzz-float {
+  0% {
+    transform: translateY(0) scale(0.7);
+    opacity: 0;
+  }
+  22% {
+    opacity: 0.9;
+  }
+  100% {
+    transform: translateY(-24px) scale(1.15);
+    opacity: 0;
+  }
+}
+
+@utility animate-aura-work {
+  animation: aura-work 1.3s ease-in-out infinite;
+}
+
+@utility animate-aura-idle {
+  animation: aura-idle 3.4s ease-in-out infinite;
+}
+
+@utility animate-ember {
+  animation: ember-rise 1.7s ease-in infinite;
+}
+
+@utility animate-zzz {
+  animation: zzz-float 3.6s ease-in infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-pixel-idle,
+  .animate-pixel-type,
+  .animate-pixel-screen,
+  .animate-pixel-blink,
+  .animate-line-flow,
+  .animate-ping-soft,
+  .animate-core-orbit,
+  .animate-core-pulse,
+  .animate-aura-work,
+  .animate-aura-idle,
+  .animate-ember,
+  .animate-zzz {
+    animation: none !important;
+  }
+}
