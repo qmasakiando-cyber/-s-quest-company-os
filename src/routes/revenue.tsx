@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   Area,
   AreaChart,
@@ -198,6 +198,12 @@ function RevenuePage() {
                 <dd className="num-display text-[var(--success)]">{jpy(REVENUE.profit)}</dd>
               </div>
             </dl>
+            <Link
+              to="/expenses"
+              className="mt-3 block text-center text-xs text-muted-foreground hover:text-foreground"
+            >
+              経費の内訳を見る（JARVIS直轄）→
+            </Link>
           </Panel>
         </div>
       </div>

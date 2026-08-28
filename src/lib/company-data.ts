@@ -691,6 +691,56 @@ export const REVENUE_SERIES: Record<string, { label: string; revenue: number; ex
   ],
 };
 
+/**
+ * 経費台帳（JARVIS直轄）。カテゴリは固定enumにせず自由入力（Supabase側もtext列）。
+ * ここにあるのは「よく使う」プリセットで、UIでは選択肢＋「その他」で自由入力を許す。
+ * 増やしたい場合はこの配列に足すだけでよい（DBスキーマ変更不要）。
+ */
+export const EXPENSE_CATEGORIES = [
+  "交通費",
+  "外注費",
+  "サブスクリプション",
+  "広告費",
+  "オフィス/備品",
+  "その他",
+] as const;
+
+export interface Expense {
+  id: string;
+  category: string;
+  amount: number;
+  transactionDate: string;
+  memo: string | null;
+  createdAt: string;
+}
+
+/** "2026-08-26" -> "2026-08" */
+export const expenseMonthKey = (transactionDate: string) => transactionDate.slice(0, 7);
+
+/** "2026-08" -> "8月" */
+export const formatMonthLabel = (monthKey: string) => `${Number(monthKey.slice(5, 7))}月`;
+
+/** 月ごとの合計（古い月→新しい月の順）。 */
+export function summarizeExpensesByMonth(expenses: Expense[]): { month: string; total: number }[] {
+  const totals = new Map<string, number>();
+  for (const e of expenses) {
+    const key = expenseMonthKey(e.transactionDate);
+    totals.set(key, (totals.get(key) ?? 0) + e.amount);
+  }
+  return [...totals.entries()].sort(([a], [b]) => (a < b ? -1 : 1)).map(([month, total]) => ({ month, total }));
+}
+
+/** カテゴリごとの合計（金額の大きい順）。 */
+export function summarizeExpensesByCategory(
+  expenses: Expense[],
+): { category: string; total: number }[] {
+  const totals = new Map<string, number>();
+  for (const e of expenses) {
+    totals.set(e.category, (totals.get(e.category) ?? 0) + e.amount);
+  }
+  return [...totals.entries()].sort(([, a], [, b]) => b - a).map(([category, total]) => ({ category, total }));
+}
+
 export const CALENDAR_EVENTS = [
   { day: "TODAY", date: "Aug 26", items: [{ time: "10:00", title: "CEO Review", kind: "Meeting", who: "CEO" }, { time: "13:00", title: "Marketing Meeting", kind: "Meeting", who: "E" }, { time: "16:00", title: "Product Review", kind: "Review", who: "C" }, { time: "22:00", title: "WF-06 KPI → Strategy", kind: "Workflow", who: "JARVIS" }] },
   { day: "THU", date: "Aug 27", items: [{ time: "09:30", title: "Daily Company Report", kind: "Report", who: "JARVIS" }, { time: "11:00", title: "LP 公開判断", kind: "Approval", who: "CEO" }, { time: "15:00", title: "SNS 投稿バッチ", kind: "Deadline", who: "E" }] },
