@@ -62,7 +62,7 @@ async function callGemini(
   history: { role: "user" | "assistant"; content: string }[],
   userMessage: string,
 ): Promise<string> {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.7-flash:generateContent?key=${apiKey}`;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`;
   const contents = [
     { role: "user", parts: [{ text: `【システム指示】\n${system}` }] },
     { role: "model", parts: [{ text: "了解しました。指示に従って行動します。" }] },
@@ -105,7 +105,7 @@ async function callLovableGateway(
       "X-Lovable-AIG-SDK": "fetch",
     },
     body: JSON.stringify({
-      model: "google/gemini-3.7-flash",
+      model: "google/gemini-3.6-flash",
       messages: [
         { role: "system", content: system },
         ...history,
