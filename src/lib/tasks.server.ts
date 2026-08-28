@@ -19,7 +19,11 @@ interface TaskRow {
 }
 
 const fmtTime = (d: Date) =>
-  d.toLocaleTimeString("ja-JP", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Tokyo" });
+  d.toLocaleTimeString("ja-JP", {
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: "Asia/Tokyo",
+  });
 
 /** Formats a due_at timestamp back into the "Today 23:00" style label the UI expects. */
 function formatDue(dueAt: string | null): string {
@@ -62,7 +66,7 @@ function rowToTask(row: TaskRow): Task {
 }
 
 export async function listTasks(): Promise<Task[]> {
-  const supabase = getSupabaseServerClient();
+  const supabase = await getSupabaseServerClient();
   const { data, error } = await supabase
     .from("tasks")
     .select("*")
@@ -77,7 +81,7 @@ export async function createTask(input: {
   title: string;
   assignee: EmployeeCode;
 }): Promise<Task> {
-  const supabase = getSupabaseServerClient();
+  const supabase = await getSupabaseServerClient();
   const baseRow = {
     title: input.title,
     description: "",
@@ -112,13 +116,17 @@ export async function createTask(input: {
       }
       return task;
     }
-    if (error.code !== "23505") throw new Error(`タスクの作成に失敗しました: ${error.message}`);
+    if (error.code !== "23505")
+      throw new Error(`タスクの作成に失敗しました: ${error.message}`);
   }
   throw new Error("タスクの作成に失敗しました: IDの採番に失敗しました。");
 }
 
-export async function setTaskStatus(input: { id: string; status: TaskStatus }): Promise<void> {
-  const supabase = getSupabaseServerClient();
+export async function setTaskStatus(input: {
+  id: string;
+  status: TaskStatus;
+}): Promise<void> {
+  const supabase = await getSupabaseServerClient();
   const { data, error } = await supabase
     .from("tasks")
     .update({ status: input.status })
@@ -127,14 +135,17 @@ export async function setTaskStatus(input: { id: string; status: TaskStatus }): 
     .single();
   if (error) throw new Error(`タスクの更新に失敗しました: ${error.message}`);
 
-  const task = data as { id: string; title: string; assignee: EmployeeCode | "JARVIS" | "CEO" };
+  const task = data as {
+    id: string;
+    title: string;
+    assignee: EmployeeCode | "JARVIS" | "CEO";
+  };
   if (task.assignee === "JARVIS" || task.assignee === "CEO") return;
 
   // AI社員の状態を連動更新する。失敗してもタスク更新自体は成功として返す。
   try {
-    const { onTaskCompleted, onTaskResumed, resolveWaitingEmployees } = await import(
-      "./employees.server"
-    );
+    const { onTaskCompleted, onTaskResumed, resolveWaitingEmployees } =
+      await import("./employees.server");
     if (input.status === "DONE") {
       await onTaskCompleted(task.assignee);
       await resolveWaitingEmployees(task.id);
@@ -142,6 +153,9 @@ export async function setTaskStatus(input: { id: string; status: TaskStatus }): 
       await onTaskResumed(task.assignee, task.title);
     }
   } catch (syncError) {
-    console.error("employee status sync (task status changed) failed:", syncError);
+    console.error(
+      "employee status sync (task status changed) failed:",
+      syncError,
+    );
   }
 }

@@ -28,7 +28,7 @@ function rowToAiOutput(row: AiOutputRow): AiOutput {
 
 /** Read-only: every AI output, most recently created first. */
 export async function listAiOutputs(): Promise<AiOutput[]> {
-  const supabase = getSupabaseServerClient();
+  const supabase = await getSupabaseServerClient();
   const { data, error } = await supabase
     .from("ai_outputs")
     .select("*")
@@ -49,7 +49,7 @@ export async function createAiOutput(input: {
   content: string | null;
   externalUrl: string | null;
 }): Promise<AiOutput> {
-  const supabase = getSupabaseServerClient();
+  const supabase = await getSupabaseServerClient();
   const { data, error } = await supabase
     .from("ai_outputs")
     .insert({

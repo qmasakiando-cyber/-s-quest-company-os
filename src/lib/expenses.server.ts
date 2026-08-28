@@ -24,7 +24,7 @@ function rowToExpense(row: ExpenseRow): Expense {
 
 /** Read-only: every expense entry, most recent transaction first. */
 export async function listExpenses(): Promise<Expense[]> {
-  const supabase = getSupabaseServerClient();
+  const supabase = await getSupabaseServerClient();
   const { data, error } = await supabase
     .from("expenses")
     .select("*")
@@ -44,7 +44,7 @@ export async function createExpense(input: {
   transactionDate: string;
   memo: string | null;
 }): Promise<Expense> {
-  const supabase = getSupabaseServerClient();
+  const supabase = await getSupabaseServerClient();
   const { data, error } = await supabase
     .from("expenses")
     .insert({

@@ -10,9 +10,12 @@ export interface EmployeeLiveState {
 
 /** Read-only: current status/progress for each AI employee, sourced from Supabase. */
 export async function listEmployeeLiveStates(): Promise<EmployeeLiveState[]> {
-  const supabase = getSupabaseServerClient();
-  const { data, error } = await supabase.from("ai_employees").select("code, status, progress");
-  if (error) throw new Error(`AI社員の状態取得に失敗しました: ${error.message}`);
+  const supabase = await getSupabaseServerClient();
+  const { data, error } = await supabase
+    .from("ai_employees")
+    .select("code, status, progress");
+  if (error)
+    throw new Error(`AI社員の状態取得に失敗しました: ${error.message}`);
   return (data ?? []) as EmployeeLiveState[];
 }
 
@@ -34,12 +37,13 @@ interface ErrorRow {
 
 /** Read-only: employees currently in ERROR status, for the Error Center. */
 export async function listErrorEmployees(): Promise<EmployeeErrorState[]> {
-  const supabase = getSupabaseServerClient();
+  const supabase = await getSupabaseServerClient();
   const { data, error } = await supabase
     .from("ai_employees")
     .select("code, status, current_task, error_count, last_activity_at")
     .eq("status", "ERROR");
-  if (error) throw new Error(`AI社員の状態取得に失敗しました: ${error.message}`);
+  if (error)
+    throw new Error(`AI社員の状態取得に失敗しました: ${error.message}`);
   const rows = (data ?? []) as ErrorRow[];
   return rows.map((r) => ({
     code: r.code,
@@ -52,8 +56,10 @@ export async function listErrorEmployees(): Promise<EmployeeErrorState[]> {
 
 const nowIso = () => new Date().toISOString();
 
-async function getEmployeeStatus(code: EmployeeCode): Promise<EmployeeStatus | null> {
-  const supabase = getSupabaseServerClient();
+async function getEmployeeStatus(
+  code: EmployeeCode,
+): Promise<EmployeeStatus | null> {
+  const supabase = await getSupabaseServerClient();
   const { data, error } = await supabase
     .from("ai_employees")
     .select("status")
@@ -71,12 +77,13 @@ export async function onTaskCreated(assignee: EmployeeCode): Promise<void> {
   const current = await getEmployeeStatus(assignee);
   if (current !== "IDLE" && current !== "DONE") return;
 
-  const supabase = getSupabaseServerClient();
+  const supabase = await getSupabaseServerClient();
   const { error } = await supabase
     .from("ai_employees")
     .update({ status: "READY", last_activity_at: nowIso() })
     .eq("code", assignee);
-  if (error) throw new Error(`AI社員状態の更新に失敗しました: ${error.message}`);
+  if (error)
+    throw new Error(`AI社員状態の更新に失敗しました: ${error.message}`);
 }
 
 /**
@@ -85,14 +92,16 @@ export async function onTaskCreated(assignee: EmployeeCode): Promise<void> {
  * current_task/progress/started_at をクリアし、本日完了数を+1。
  */
 export async function onTaskCompleted(assignee: EmployeeCode): Promise<void> {
-  const supabase = getSupabaseServerClient();
+  const supabase = await getSupabaseServerClient();
   const { data, error: fetchError } = await supabase
     .from("ai_employees")
     .select("completed_today")
     .eq("code", assignee)
     .single();
-  if (fetchError) throw new Error(`AI社員状態の取得に失敗しました: ${fetchError.message}`);
-  const completedToday = ((data as { completed_today: number })["completed_today"] ?? 0) + 1;
+  if (fetchError)
+    throw new Error(`AI社員状態の取得に失敗しました: ${fetchError.message}`);
+  const completedToday =
+    ((data as { completed_today: number })["completed_today"] ?? 0) + 1;
 
   const { error } = await supabase
     .from("ai_employees")
@@ -105,15 +114,19 @@ export async function onTaskCompleted(assignee: EmployeeCode): Promise<void> {
       last_activity_at: nowIso(),
     })
     .eq("code", assignee);
-  if (error) throw new Error(`AI社員状態の更新に失敗しました: ${error.message}`);
+  if (error)
+    throw new Error(`AI社員状態の更新に失敗しました: ${error.message}`);
 }
 
 /**
  * タスク再開イベント：DONEだったタスクが他ステータス（現状のUIではIN PROGRESSのみ到達可）
  * へ戻された時、担当者をWORKINGにする。
  */
-export async function onTaskResumed(assignee: EmployeeCode, taskTitle: string): Promise<void> {
-  const supabase = getSupabaseServerClient();
+export async function onTaskResumed(
+  assignee: EmployeeCode,
+  taskTitle: string,
+): Promise<void> {
+  const supabase = await getSupabaseServerClient();
   const { error } = await supabase
     .from("ai_employees")
     .update({
@@ -124,15 +137,18 @@ export async function onTaskResumed(assignee: EmployeeCode, taskTitle: string): 
       last_activity_at: nowIso(),
     })
     .eq("code", assignee);
-  if (error) throw new Error(`AI社員状態の更新に失敗しました: ${error.message}`);
+  if (error)
+    throw new Error(`AI社員状態の更新に失敗しました: ${error.message}`);
 }
 
 /**
  * 依存解消イベント：完了したタスク(completedTaskId)に依存している他タスクを確認し、
  * その依存が全て満たされた場合、担当者が WAITING であれば READY に戻し waiting_for をクリアする。
  */
-export async function resolveWaitingEmployees(completedTaskId: string): Promise<void> {
-  const supabase = getSupabaseServerClient();
+export async function resolveWaitingEmployees(
+  completedTaskId: string,
+): Promise<void> {
+  const supabase = await getSupabaseServerClient();
   const { data: allTasks, error } = await supabase
     .from("tasks")
     .select("id, assignee, status, dependencies");
@@ -158,9 +174,14 @@ export async function resolveWaitingEmployees(completedTaskId: string): Promise<
 
     const { error: updateError } = await supabase
       .from("ai_employees")
-      .update({ status: "READY", waiting_for: null, last_activity_at: nowIso() })
+      .update({
+        status: "READY",
+        waiting_for: null,
+        last_activity_at: nowIso(),
+      })
       .eq("code", task.assignee);
-    if (updateError) throw new Error(`AI社員状態の更新に失敗しました: ${updateError.message}`);
+    if (updateError)
+      throw new Error(`AI社員状態の更新に失敗しました: ${updateError.message}`);
   }
 }
 
@@ -168,20 +189,27 @@ export async function resolveWaitingEmployees(completedTaskId: string): Promise<
  * 個別チャット失敗イベント：担当社員をERROR状態にし、error_countを+1する。
  */
 export async function onEmployeeChatError(code: EmployeeCode): Promise<void> {
-  const supabase = getSupabaseServerClient();
+  const supabase = await getSupabaseServerClient();
   const { data, error: fetchError } = await supabase
     .from("ai_employees")
     .select("error_count")
     .eq("code", code)
     .single();
-  if (fetchError) throw new Error(`AI社員状態の取得に失敗しました: ${fetchError.message}`);
-  const errorCount = ((data as { error_count: number })["error_count"] ?? 0) + 1;
+  if (fetchError)
+    throw new Error(`AI社員状態の取得に失敗しました: ${fetchError.message}`);
+  const errorCount =
+    ((data as { error_count: number })["error_count"] ?? 0) + 1;
 
   const { error } = await supabase
     .from("ai_employees")
-    .update({ status: "ERROR", error_count: errorCount, last_activity_at: nowIso() })
+    .update({
+      status: "ERROR",
+      error_count: errorCount,
+      last_activity_at: nowIso(),
+    })
     .eq("code", code);
-  if (error) throw new Error(`AI社員状態の更新に失敗しました: ${error.message}`);
+  if (error)
+    throw new Error(`AI社員状態の更新に失敗しました: ${error.message}`);
 }
 
 /**
@@ -190,7 +218,7 @@ export async function onEmployeeChatError(code: EmployeeCode): Promise<void> {
  * error_count は履歴として保持し、リセットしない。
  */
 export async function retryEmployee(code: EmployeeCode): Promise<void> {
-  const supabase = getSupabaseServerClient();
+  const supabase = await getSupabaseServerClient();
   const { error } = await supabase
     .from("ai_employees")
     .update({
@@ -201,5 +229,6 @@ export async function retryEmployee(code: EmployeeCode): Promise<void> {
       last_activity_at: nowIso(),
     })
     .eq("code", code);
-  if (error) throw new Error(`AI社員状態の更新に失敗しました: ${error.message}`);
+  if (error)
+    throw new Error(`AI社員状態の更新に失敗しました: ${error.message}`);
 }

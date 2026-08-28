@@ -47,8 +47,12 @@ function rowToWorkflow(row: WorkflowRow): Workflow {
 }
 
 export async function listWorkflows(): Promise<Workflow[]> {
-  const supabase = getSupabaseServerClient();
-  const { data, error } = await supabase.from("workflows").select("*").order("code", { ascending: true });
-  if (error) throw new Error(`ワークフローの取得に失敗しました: ${error.message}`);
+  const supabase = await getSupabaseServerClient();
+  const { data, error } = await supabase
+    .from("workflows")
+    .select("*")
+    .order("code", { ascending: true });
+  if (error)
+    throw new Error(`ワークフローの取得に失敗しました: ${error.message}`);
   return (data as WorkflowRow[]).map(rowToWorkflow);
 }

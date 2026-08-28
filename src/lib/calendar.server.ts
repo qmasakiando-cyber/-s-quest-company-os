@@ -1,7 +1,8 @@
 // DELETE禁止ルール：物理削除は行わない（詳細は supabase.server.ts 参照）。
 import { getSupabaseServerClient } from "./supabase.server";
 
-export type EventKind = "Meeting" | "Review" | "Workflow" | "Report" | "Approval" | "Deadline";
+export type EventKind =
+  "Meeting" | "Review" | "Workflow" | "Report" | "Approval" | "Deadline";
 export type EventOwner = "A" | "B" | "C" | "D" | "E" | "F" | "JARVIS" | "CEO";
 
 interface CalendarEventRow {
@@ -33,20 +34,33 @@ export interface CalendarDay {
 const DAY_LABEL = (d: Date, isToday: boolean) =>
   isToday
     ? "TODAY"
-    : d.toLocaleDateString("en-US", { weekday: "short", timeZone: "Asia/Tokyo" }).toUpperCase();
+    : d
+        .toLocaleDateString("en-US", {
+          weekday: "short",
+          timeZone: "Asia/Tokyo",
+        })
+        .toUpperCase();
 
 const DATE_LABEL = (d: Date) =>
-  d.toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "Asia/Tokyo" });
+  d.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    timeZone: "Asia/Tokyo",
+  });
 
 const TIME_LABEL = (d: Date) =>
-  d.toLocaleTimeString("ja-JP", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Tokyo" });
+  d.toLocaleTimeString("ja-JP", {
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: "Asia/Tokyo",
+  });
 
 const dayKey = (d: Date) =>
   d.toLocaleDateString("en-CA", { timeZone: "Asia/Tokyo" }); // YYYY-MM-DD
 
 /** Fetches the next 7 days of events, grouped by calendar day like the old mock. */
 export async function listCalendarEvents(): Promise<CalendarDay[]> {
-  const supabase = getSupabaseServerClient();
+  const supabase = await getSupabaseServerClient();
   const now = new Date();
   const todayKey = dayKey(now);
   const rangeStart = new Date(now);
@@ -61,7 +75,8 @@ export async function listCalendarEvents(): Promise<CalendarDay[]> {
     .lt("start_at", rangeEnd.toISOString())
     .neq("status", "cancelled")
     .order("start_at", { ascending: true });
-  if (error) throw new Error(`カレンダーの取得に失敗しました: ${error.message}`);
+  if (error)
+    throw new Error(`カレンダーの取得に失敗しました: ${error.message}`);
 
   const rows = data as CalendarEventRow[];
   const byDay = new Map<string, { date: Date; items: CalendarItem[] }>();
@@ -92,7 +107,7 @@ export async function createCalendarEvent(input: {
   kind: EventKind;
   owner: EventOwner;
 }): Promise<void> {
-  const supabase = getSupabaseServerClient();
+  const supabase = await getSupabaseServerClient();
   const { error } = await supabase.from("calendar_events").insert({
     title: input.title,
     start_at: input.startAt,

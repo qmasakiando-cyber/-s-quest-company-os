@@ -45,14 +45,20 @@ function formatByUnit(v: number, unit: string): string {
 }
 
 export async function listKpis(): Promise<Kpi[]> {
-  const supabase = getSupabaseServerClient();
-  const [{ data: kpiRows, error: kpiError }, { data: valueRows, error: valueError }] =
-    await Promise.all([
-      supabase.from("kpis").select("*").eq("status", "active"),
-      supabase.from("kpi_values").select("*").order("period_start", { ascending: true }),
-    ]);
+  const supabase = await getSupabaseServerClient();
+  const [
+    { data: kpiRows, error: kpiError },
+    { data: valueRows, error: valueError },
+  ] = await Promise.all([
+    supabase.from("kpis").select("*").eq("status", "active"),
+    supabase
+      .from("kpi_values")
+      .select("*")
+      .order("period_start", { ascending: true }),
+  ]);
   if (kpiError) throw new Error(`KPIの取得に失敗しました: ${kpiError.message}`);
-  if (valueError) throw new Error(`KPI実績の取得に失敗しました: ${valueError.message}`);
+  if (valueError)
+    throw new Error(`KPI実績の取得に失敗しました: ${valueError.message}`);
 
   const valuesByKpi = new Map<string, KpiValueRow[]>();
   for (const row of valueRows as KpiValueRow[]) {
@@ -68,8 +74,12 @@ export async function listKpis(): Promise<Kpi[]> {
     const previous = values.at(-2);
     const currentValue = current?.value ?? 0;
     const previousValue = previous?.value ?? currentValue;
-    const change = previousValue !== 0 ? ((currentValue - previousValue) / previousValue) * 100 : 0;
-    const targetValue = current?.target_value ?? kpi.target_value ?? currentValue;
+    const change =
+      previousValue !== 0
+        ? ((currentValue - previousValue) / previousValue) * 100
+        : 0;
+    const targetValue =
+      current?.target_value ?? kpi.target_value ?? currentValue;
 
     return {
       name: kpi.name,
