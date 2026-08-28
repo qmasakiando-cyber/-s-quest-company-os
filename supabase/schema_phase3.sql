@@ -57,3 +57,15 @@ create table if not exists workflows (
 create trigger trg_workflows_updated_at
   before update on workflows
   for each row execute function set_updated_at();
+
+-- ----------------------------------------------------------------------------
+-- Migration 003 — tasks.workflow_id: FK from tasks to workflows.
+-- See supabase/migration_003_tasks_workflow_id.sql for the standalone
+-- migration run against the already-deployed database. Kept here too so
+-- this file stays an accurate reference for a fresh install.
+-- The existing free-text tasks.workflow column is left untouched.
+-- ----------------------------------------------------------------------------
+alter table tasks
+  add column if not exists workflow_id uuid references workflows (id) on delete set null;
+
+create index if not exists idx_tasks_workflow_id on tasks (workflow_id);
