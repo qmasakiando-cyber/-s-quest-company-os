@@ -211,37 +211,45 @@ export function EmptyState({
   );
 }
 
-/** EmptyStateと同じ構造の、エラー表示用Feedbackコンポーネント（Component Library Feedback / ErrorState）。 */
+/**
+ * EmptyStateと同じ構造の、エラー・状態通知用Feedbackコンポーネント（Component Library Feedback / ErrorState）。
+ * デフォルトは destructive（実際のエラー用）だが、`tone` を渡せば「承認待ち0件＝オールクリア」のような
+ * 同じ構造の状態通知にも流用できる（例：success トーンで承認センターの0件表示）。
+ */
 export function ErrorState({
   title,
   body,
   actionLabel,
   onAction,
+  tone = "var(--destructive)",
 }: {
   title: string;
   body: string;
   actionLabel?: string;
   onAction?: () => void;
+  tone?: string;
 }) {
   return (
     <div
       className="panel flex flex-col items-center gap-3 px-6 py-12 text-center"
-      style={{ borderColor: "color-mix(in oklab, var(--destructive) 30%, var(--border))" }}
+      style={{ borderColor: `color-mix(in oklab, ${tone} 30%, var(--border))` }}
     >
       <div
         className="size-10 rounded-full border"
         style={{
-          borderColor: "color-mix(in oklab, var(--destructive) 45%, transparent)",
-          background: "color-mix(in oklab, var(--destructive) 14%, transparent)",
+          borderColor: `color-mix(in oklab, ${tone} 45%, transparent)`,
+          background: `color-mix(in oklab, ${tone} 14%, transparent)`,
         }}
       />
-      <h3 className="text-sm font-semibold text-destructive">{title}</h3>
+      <h3 className="text-sm font-semibold" style={{ color: tone }}>
+        {title}
+      </h3>
       <p className="max-w-sm text-sm text-muted-foreground">{body}</p>
       {actionLabel ? (
         <button
           onClick={onAction}
           className="mt-2 rounded-lg border px-4 py-2 text-xs font-semibold transition-opacity hover:opacity-90"
-          style={{ borderColor: "var(--destructive)", color: "var(--destructive)" }}
+          style={{ borderColor: tone, color: tone }}
         >
           {actionLabel}
         </button>

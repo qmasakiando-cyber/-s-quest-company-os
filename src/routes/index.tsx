@@ -307,7 +307,14 @@ function HqPage() {
 
       {/* ── Approvals / alerts ── */}
       <section className="mt-8">
-        <SectionTitle title="CEOの確認が必要" />
+        <SectionTitle
+          title="CEOの確認が必要"
+          action={
+            <Link to="/approvals" className="text-xs text-muted-foreground hover:text-foreground">
+              承認センターを開く
+            </Link>
+          }
+        />
         <div className="grid gap-3 lg:grid-cols-3">
           {ALERTS.map((a) => {
             const tone =
