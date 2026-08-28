@@ -32,7 +32,60 @@ export const STATUS_LABEL: Record<EmployeeStatus, string> = {
   DONE: "タスク完了",
 };
 
+/**
+ * 会社全体の稼働状況（新テーブルなし、ai_employees.status の集計から都度算出）。
+ * PLANNING/COMPLETED相当は EXECUTING/IDLE に統合し、4状態のみ扱う。
+ */
+export type CompanyStatus = "EXECUTING" | "REVIEWING" | "WAITING_APPROVAL" | "IDLE";
+
+export const COMPANY_STATUS_LABEL: Record<CompanyStatus, string> = {
+  EXECUTING: "実行中",
+  REVIEWING: "レビュー中",
+  WAITING_APPROVAL: "CEO承認待ち",
+  IDLE: "待機中",
+};
+
+export const COMPANY_STATUS_TONE: Record<CompanyStatus, string> = {
+  EXECUTING: "var(--primary)",
+  REVIEWING: "var(--emp-c)",
+  WAITING_APPROVAL: "var(--warning)",
+  IDLE: "var(--muted-foreground)",
+};
+
+/**
+ * 優先順位：CEO承認待ち／エラー ＞ レビュー中 ＞ 実行中 ＞ 待機中。
+ * 1人でも承認待ち・エラーがいれば会社全体としてCEOの確認が必要、という判断。
+ */
+export function computeCompanyStatus(statuses: EmployeeStatus[]): CompanyStatus {
+  if (statuses.some((s) => s === "APPROVAL_REQUIRED" || s === "ERROR")) return "WAITING_APPROVAL";
+  if (statuses.some((s) => s === "REVIEW")) return "REVIEWING";
+  if (statuses.some((s) => s === "WORKING" || s === "THINKING" || s === "READY")) return "EXECUTING";
+  return "IDLE";
+}
+
 export type EmployeeCode = "A" | "B" | "C" | "D" | "E" | "F";
+
+/**
+ * 権限ラベルの標準12ドメイン（COMPANY OSの13カテゴリ = OS_CATEGORIES から、
+ * AI社員システム自体を指す "AI" を除いた、業務ドメインのみのセット）。
+ * 各AI社員の permissions.read / permissions.write はこの語彙に統一する。
+ */
+export const PERMISSION_DOMAINS = [
+  "COMPANY",
+  "BRAND",
+  "SERVICE",
+  "DIAGNOSIS",
+  "PRODUCT",
+  "MARKETING",
+  "SALES",
+  "KPI",
+  "REVENUE",
+  "WORKFLOW",
+  "RULES",
+  "KNOWLEDGE",
+] as const;
+
+export type PermissionDomain = (typeof PERMISSION_DOMAINS)[number];
 
 /** ゲーム発展国風ドット絵スタイル定義 */
 export interface PixelSpriteConfig {
@@ -70,7 +123,7 @@ export interface AIEmployee {
     avgCompletion: string;
     qaPassRate: number;
   };
-  permissions: { read: string[]; write: string[] };
+  permissions: { read: PermissionDomain[]; write: PermissionDomain[] };
   systemPrompt: string;
   activity: { at: string; text: string }[];
 }
@@ -98,8 +151,8 @@ export const EMPLOYEES: AIEmployee[] = [
     steps: ["Researching", "Collecting sources", "Analyzing", "Structuring", "Reporting"],
     performance: { tasksCompleted: 214, successRate: 96.4, avgCompletion: "18m", qaPassRate: 94.1 },
     permissions: {
-      read: ["Company", "Brand", "Product", "Marketing", "Sales"],
-      write: ["Research", "Knowledge"],
+      read: ["COMPANY", "BRAND", "PRODUCT", "MARKETING", "SALES"],
+      write: ["KNOWLEDGE"],
     },
     systemPrompt:
       "You are Employee A of S-QUEST COMPANY. You own research and intelligence. Always cite sources, separate fact from inference, and hand structured findings back to JARVIS.",
@@ -131,8 +184,8 @@ export const EMPLOYEES: AIEmployee[] = [
     steps: ["Framing", "Hypothesis", "Modeling", "Prioritizing", "Proposing"],
     performance: { tasksCompleted: 168, successRate: 94.8, avgCompletion: "26m", qaPassRate: 96.2 },
     permissions: {
-      read: ["Company", "Research", "KPI", "Sales"],
-      write: ["Strategy", "Planning"],
+      read: ["COMPANY", "KNOWLEDGE", "KPI", "SALES"],
+      write: ["COMPANY", "PRODUCT", "SERVICE", "KPI"],
     },
     systemPrompt:
       "You are Employee B of S-QUEST COMPANY. Convert research into strategy: hypotheses, KPI targets, sequencing. Never invent data — request it from A via JARVIS.",
@@ -162,7 +215,7 @@ export const EMPLOYEES: AIEmployee[] = [
     capabilities: ["UX Flow", "Spec Writing", "Visual Direction", "Copy"],
     steps: ["Briefing", "Concepting", "Designing", "Speccing", "Handoff"],
     performance: { tasksCompleted: 141, successRate: 92.1, avgCompletion: "34m", qaPassRate: 90.7 },
-    permissions: { read: ["Brand", "Product", "Strategy"], write: ["Creative", "Product"] },
+    permissions: { read: ["BRAND", "PRODUCT", "COMPANY"], write: ["BRAND", "PRODUCT", "DIAGNOSIS"] },
     systemPrompt:
       "You are Employee C of S-QUEST COMPANY. You design product and creative output within the brand rules stored in COMPANY OS / BRAND. External publication always requires CEO approval.",
     activity: [
@@ -192,8 +245,8 @@ export const EMPLOYEES: AIEmployee[] = [
     steps: ["Pipeline pull", "Scoring", "Diagnosing", "Proposing", "Forecasting"],
     performance: { tasksCompleted: 122, successRate: 91.5, avgCompletion: "22m", qaPassRate: 93.4 },
     permissions: {
-      read: ["Company", "Product", "Marketing", "Strategy"],
-      write: ["Sales", "CRM"],
+      read: ["COMPANY", "PRODUCT", "MARKETING"],
+      write: ["SALES", "REVENUE"],
     },
     systemPrompt:
       "You are Employee D of S-QUEST COMPANY. Own pipeline and revenue development. Outbound sending and contracts require CEO approval.",
@@ -223,7 +276,7 @@ export const EMPLOYEES: AIEmployee[] = [
     capabilities: ["Funnel Analysis", "SEO", "Content Plan", "Ad Ops"],
     steps: ["Funnel read", "Ideation", "Producing", "Scheduling", "Measuring"],
     performance: { tasksCompleted: 197, successRate: 93.7, avgCompletion: "20m", qaPassRate: 92.8 },
-    permissions: { read: ["Brand", "Product", "Sales", "KPI"], write: ["Marketing"] },
+    permissions: { read: ["BRAND", "PRODUCT", "SALES", "KPI"], write: ["MARKETING"] },
     systemPrompt:
       "You are Employee E of S-QUEST COMPANY. Own growth. Any external publication (SNS, ads, email) requires CEO approval before send.",
     activity: [
@@ -252,7 +305,7 @@ export const EMPLOYEES: AIEmployee[] = [
     capabilities: ["Logic Check", "Data Integrity", "Risk Detection", "Final Review"],
     steps: ["Intake", "Fact check", "Logic check", "Risk scan", "Verdict"],
     performance: { tasksCompleted: 286, successRate: 98.2, avgCompletion: "11m", qaPassRate: 99.1 },
-    permissions: { read: ["Everything required for QA"], write: ["QA", "Audit", "Issue"] },
+    permissions: { read: [...PERMISSION_DOMAINS], write: ["RULES", "WORKFLOW", "PRODUCT"] },
     systemPrompt:
       "You are Employee F of S-QUEST COMPANY. You are the last gate before CEO. Block anything unverifiable and report the exact reason.",
     activity: [

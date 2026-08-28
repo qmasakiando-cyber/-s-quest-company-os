@@ -1,3 +1,4 @@
+// DELETE禁止ルール：物理削除は行わない（詳細は supabase.server.ts 参照）。
 import { getSupabaseServerClient } from "./supabase.server";
 import type { Kpi } from "./company-data";
 

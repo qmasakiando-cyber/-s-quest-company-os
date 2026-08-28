@@ -1,7 +1,8 @@
 import { Link } from "@tanstack/react-router";
 import { JarvisCore, type CoreState } from "./JarvisCore";
-import { Meter } from "./primitives";
+import { Meter, Tag } from "./primitives";
 import type { Handoff, QuestState } from "@/lib/demo-mode";
+import { COMPANY_STATUS_LABEL, COMPANY_STATUS_TONE, type CompanyStatus } from "@/lib/company-data";
 
 const CORE_STATE: Record<QuestState, CoreState> = {
   IDLE: "IDLE",
@@ -25,12 +26,15 @@ export function QuestCore({
   health,
   currentTask,
   handoff,
+  companyStatus,
 }: {
   state: QuestState;
   message: string;
   health: number;
   currentTask: string;
   handoff: Handoff | null;
+  /** 実際のAI社員稼働状況（ai_employees）から算出した会社全体のステータス */
+  companyStatus?: CompanyStatus | undefined;
 }) {
   return (
     <section
@@ -48,7 +52,14 @@ export function QuestCore({
       <div className="relative grid items-center gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)] lg:gap-12">
         {/* 大画面ではコアを大きく表示 */}
         <div className="flex flex-col items-center text-center">
-          <p className="label-caps">AI COMPANY 司令塔</p>
+          <div className="flex items-center gap-2">
+            <p className="label-caps">AI COMPANY 司令塔</p>
+            {companyStatus ? (
+              <Tag tone={COMPANY_STATUS_TONE[companyStatus]}>
+                COMPANY STATUS · {COMPANY_STATUS_LABEL[companyStatus]}
+              </Tag>
+            ) : null}
+          </div>
           <div className="relative mt-4 aspect-square w-[240px] sm:w-[320px] lg:w-[420px] xl:w-[480px]">
             <JarvisCore state={CORE_STATE[state]} size="100%" label="JARVIS" health={health} />
             {handoff ? (

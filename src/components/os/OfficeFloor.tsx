@@ -1,6 +1,6 @@
 import { DeskCard } from "./DeskCard";
 import { QuestCore } from "./QuestCore";
-import type { EmployeeCode } from "@/lib/company-data";
+import type { CompanyStatus, EmployeeCode } from "@/lib/company-data";
 import type { Handoff, LiveEmployee, QuestState } from "@/lib/demo-mode";
 
 const ORDER: EmployeeCode[] = ["A", "B", "C", "D", "E", "F"];
@@ -94,6 +94,7 @@ export function OfficeFloor({
   questMessage,
   health,
   currentTask,
+  companyStatus,
 }: {
   employees: LiveEmployee[];
   handoff: Handoff | null;
@@ -101,6 +102,7 @@ export function OfficeFloor({
   questMessage: string;
   health: number;
   currentTask: string;
+  companyStatus?: CompanyStatus | undefined;
 }) {
   const ordered = [...employees].sort(
     (a, b) => ORDER.indexOf(a.code) - ORDER.indexOf(b.code),
@@ -120,6 +122,7 @@ export function OfficeFloor({
           health={health}
           currentTask={currentTask}
           handoff={handoff}
+          companyStatus={companyStatus}
         />
       </div>
 

@@ -1,5 +1,6 @@
 import { useMemo, useState, useRef, useEffect } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { Mic, Plus, Send } from "lucide-react";
 import { AppShell } from "@/components/os/AppShell";
 import { OfficeFloor } from "@/components/os/OfficeFloor";
@@ -16,15 +17,19 @@ import { useCompanySimulation } from "@/lib/demo-mode";
 import { useTasks } from "@/lib/use-tasks";
 import { useCalendar } from "@/lib/use-calendar";
 import { useKpis } from "@/lib/use-kpis";
+import { listEmployeeLiveStatesFn } from "@/lib/employees.functions";
 import type { EventKind, EventOwner } from "@/lib/calendar.server";
 import {
   ALERTS,
   APPROVAL_LEVEL_SHORT_LABEL,
   APPROVAL_LEVEL_TONE,
   DASHBOARD_KPI_NAMES,
+  EMPLOYEES,
   QUICK_ACTIONS,
   REVENUE,
+  computeCompanyStatus,
   type EmployeeCode,
+  type EmployeeStatus,
   empColor,
   jpy,
 } from "@/lib/company-data";
@@ -58,6 +63,31 @@ function HqPage() {
   const [listening, setListening] = useState(false);
   const recognizerRef = useRef<any>(null);
   const sim = useCompanySimulation();
+
+  // COMPANY STATUS：ai_employees の実データから算出（新テーブルなし、表示のみ）
+  const [liveStatuses, setLiveStatuses] = useState<Partial<Record<EmployeeCode, EmployeeStatus>>>(
+    {},
+  );
+  const listLiveStates = useServerFn(listEmployeeLiveStatesFn);
+  useEffect(() => {
+    let cancelled = false;
+    listLiveStates()
+      .then((states) => {
+        if (cancelled) return;
+        setLiveStatuses(Object.fromEntries(states.map((s) => [s.code, s.status])));
+      })
+      .catch(() => {
+        // Supabase未到達時は company-data.ts の静的値にフォールバックする
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [listLiveStates]);
+  const companyStatus = useMemo(
+    () =>
+      computeCompanyStatus(EMPLOYEES.map((e) => liveStatuses[e.code] ?? e.status)),
+    [liveStatuses],
+  );
 
   useEffect(() => {
     return () => {
@@ -271,6 +301,7 @@ function HqPage() {
           questMessage={sim.questMessage}
           health={sim.health}
           currentTask="WF-06｜KPI Gap → Strategy → Sales リカバリー"
+          companyStatus={companyStatus}
         />
       </section>
 
