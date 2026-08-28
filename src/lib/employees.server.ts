@@ -6,17 +6,42 @@ export interface EmployeeLiveState {
   code: EmployeeCode;
   status: EmployeeStatus;
   progress: number;
+  currentTask: string | null;
+  completedToday: number;
+  lastActivityAt: string | null;
 }
 
-/** Read-only: current status/progress for each AI employee, sourced from Supabase. */
+interface EmployeeLiveStateRow {
+  code: EmployeeCode;
+  status: EmployeeStatus;
+  progress: number;
+  current_task: string | null;
+  completed_today: number | null;
+  last_activity_at: string | null;
+}
+
+function rowToLiveState(row: EmployeeLiveStateRow): EmployeeLiveState {
+  return {
+    code: row.code,
+    status: row.status,
+    progress: row.progress,
+    currentTask: row.current_task,
+    completedToday: row.completed_today ?? 0,
+    lastActivityAt: row.last_activity_at,
+  };
+}
+
+/** Read-only: current status/progress/current task for each AI employee, sourced from Supabase. */
 export async function listEmployeeLiveStates(): Promise<EmployeeLiveState[]> {
   const supabase = await getSupabaseServerClient();
   const { data, error } = await supabase
     .from("ai_employees")
-    .select("code, status, progress");
+    .select(
+      "code, status, progress, current_task, completed_today, last_activity_at",
+    );
   if (error)
     throw new Error(`AI社員の状態取得に失敗しました: ${error.message}`);
-  return (data ?? []) as EmployeeLiveState[];
+  return (data as EmployeeLiveStateRow[]).map(rowToLiveState);
 }
 
 export interface EmployeeErrorState {

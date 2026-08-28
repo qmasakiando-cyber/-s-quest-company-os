@@ -1,6 +1,10 @@
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
-import { STATUS_LABEL, type EmployeeStatus } from "@/lib/company-data";
+import {
+  STATUS_LABEL,
+  STATUS_TONE,
+  type EmployeeStatus,
+} from "@/lib/company-data";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 
 export function Panel({
@@ -28,7 +32,9 @@ export function SectionTitle({
     <div className="mb-4 flex items-end justify-between gap-4">
       <div>
         <h2 className="label-caps">{title}</h2>
-        {hint ? <p className="mt-1 text-sm text-muted-foreground">{hint}</p> : null}
+        {hint ? (
+          <p className="mt-1 text-sm text-muted-foreground">{hint}</p>
+        ) : null}
       </div>
       {action}
     </div>
@@ -50,29 +56,21 @@ export function PageHeader({
     <header className="mb-7 flex flex-wrap items-end justify-between gap-4">
       <div>
         {eyebrow ? <p className="label-caps mb-2">{eyebrow}</p> : null}
-        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{title}</h1>
+        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+          {title}
+        </h1>
         {description ? (
-          <p className="mt-2 max-w-2xl text-sm text-muted-foreground">{description}</p>
+          <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
+            {description}
+          </p>
         ) : null}
       </div>
-      {actions ? <div className="flex flex-wrap items-center gap-2">{actions}</div> : null}
+      {actions ? (
+        <div className="flex flex-wrap items-center gap-2">{actions}</div>
+      ) : null}
     </header>
   );
 }
-
-const STATUS_TONE: Record<EmployeeStatus, string> = {
-  IDLE: "var(--muted-foreground)",
-  THINKING: "var(--info)",
-  WORKING: "var(--primary)",
-  WAITING: "var(--muted-foreground)",
-  REVIEW: "var(--emp-b)",
-  APPROVAL_REQUIRED: "var(--warning)",
-  COMPLETED: "var(--success)",
-  ERROR: "var(--destructive)",
-  READY: "var(--info)",
-  BLOCKED: "var(--destructive)",
-  DONE: "var(--success)",
-};
 
 export function StatusPill({
   status,
@@ -283,7 +281,9 @@ export function ConfirmDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogTitle className="text-base font-semibold">{title}</DialogTitle>
-        {description ? <p className="text-sm text-muted-foreground">{description}</p> : null}
+        {description ? (
+          <p className="text-sm text-muted-foreground">{description}</p>
+        ) : null}
         <div className="mt-2 flex justify-end gap-2">
           <button
             onClick={() => onOpenChange(false)}
@@ -297,7 +297,9 @@ export function ConfirmDialog({
               onConfirm();
             }}
             className="rounded-lg px-4 py-2 text-xs font-semibold text-primary-foreground hover:opacity-90"
-            style={{ background: danger ? "var(--destructive)" : "var(--primary)" }}
+            style={{
+              background: danger ? "var(--destructive)" : "var(--primary)",
+            }}
           >
             {confirmLabel}
           </button>

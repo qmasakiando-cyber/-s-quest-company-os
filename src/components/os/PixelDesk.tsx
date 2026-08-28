@@ -1,6 +1,9 @@
 import { cn } from "@/lib/utils";
-import { AI_EMPLOYEES, type EmployeeCode } from "@/lib/company-data";
-import type { LiveStatus } from "@/lib/demo-mode";
+import {
+  AI_EMPLOYEES,
+  type EmployeeCode,
+  type EmployeeStatus,
+} from "@/lib/company-data";
 
 /**
  * AI社員のデスクシーン。public/characters/{code}.png（実写風イラスト、透過背景）を
@@ -14,7 +17,7 @@ export function PixelDesk({
   personaName,
 }: {
   code: EmployeeCode;
-  status: LiveStatus;
+  status: EmployeeStatus;
   className?: string;
   personaName?: string;
 }) {

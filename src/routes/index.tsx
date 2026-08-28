@@ -1,6 +1,5 @@
 import { useMemo, useState, useRef, useEffect } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useServerFn } from "@tanstack/react-start";
 import { Mic, Plus, Send } from "lucide-react";
 import { AppShell } from "@/components/os/AppShell";
 import { OfficeFloor } from "@/components/os/OfficeFloor";
@@ -17,7 +16,7 @@ import { useCompanySimulation } from "@/lib/demo-mode";
 import { useTasks } from "@/lib/use-tasks";
 import { useCalendar } from "@/lib/use-calendar";
 import { useKpis } from "@/lib/use-kpis";
-import { listEmployeeLiveStatesFn } from "@/lib/employees.functions";
+import { useEmployeeLiveStates } from "@/lib/use-employee-live-states";
 import type { EventKind, EventOwner } from "@/lib/calendar.server";
 import {
   ALERTS,
@@ -25,11 +24,12 @@ import {
   APPROVAL_LEVEL_TONE,
   DASHBOARD_KPI_NAMES,
   EMPLOYEES,
+  NO_CURRENT_TASK_LABEL,
   QUICK_ACTIONS,
   REVENUE,
   computeCompanyStatus,
+  formatLastActivity,
   type EmployeeCode,
-  type EmployeeStatus,
   empColor,
   jpy,
 } from "@/lib/company-data";
@@ -43,7 +43,10 @@ export const Route = createFileRoute("/")({
         content:
           "CEO × JARVIS × AI社員A〜Fが働く仮想企業のHQダッシュボード。デスクで作業するAI社員、タスク配分、Activity、KPI、売上を一画面で経営する。",
       },
-      { property: "og:title", content: "S-QUEST COMPANY HQ — AI Company Operating System" },
+      {
+        property: "og:title",
+        content: "S-QUEST COMPANY HQ — AI Company Operating System",
+      },
       {
         property: "og:description",
         content:
@@ -63,30 +66,35 @@ function HqPage() {
   const [listening, setListening] = useState(false);
   const recognizerRef = useRef<any>(null);
   const sim = useCompanySimulation();
+  const { setEmployees: setSimEmployees } = sim;
 
-  // COMPANY STATUS：ai_employees の実データから算出（新テーブルなし、表示のみ）
-  const [liveStatuses, setLiveStatuses] = useState<Partial<Record<EmployeeCode, EmployeeStatus>>>(
-    {},
-  );
-  const listLiveStates = useServerFn(listEmployeeLiveStatesFn);
+  // AIオフィスフロア：status/progress/currentTask/completedToday/lastActivity
+  // は ai_employees の実データで上書きする（体の微アニメーション・引き渡し演出・
+  // 売上ティッカーは sim 側の演出のまま）。COMPANY STATUS バッジも同じ実データから算出。
+  const { states: liveStates } = useEmployeeLiveStates();
   useEffect(() => {
-    let cancelled = false;
-    listLiveStates()
-      .then((states) => {
-        if (cancelled) return;
-        setLiveStatuses(Object.fromEntries(states.map((s) => [s.code, s.status])));
-      })
-      .catch(() => {
-        // Supabase未到達時は company-data.ts の静的値にフォールバックする
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [listLiveStates]);
+    setSimEmployees((prev) =>
+      prev.map((emp) => {
+        const live = liveStates[emp.code];
+        if (!live) return emp;
+        return {
+          ...emp,
+          status: live.status,
+          progress: live.progress,
+          currentTask: live.currentTask ?? NO_CURRENT_TASK_LABEL,
+          completedToday: live.completedToday,
+          todayTasks: Math.max(emp.todayTasks, live.completedToday + 2),
+          lastActivity: formatLastActivity(live.lastActivityAt),
+        };
+      }),
+    );
+  }, [liveStates, setSimEmployees]);
   const companyStatus = useMemo(
     () =>
-      computeCompanyStatus(EMPLOYEES.map((e) => liveStatuses[e.code] ?? e.status)),
-    [liveStatuses],
+      computeCompanyStatus(
+        EMPLOYEES.map((e) => liveStates[e.code]?.status ?? e.status),
+      ),
+    [liveStates],
   );
 
   useEffect(() => {
@@ -97,9 +105,12 @@ function HqPage() {
 
   const startVoice = () => {
     const SpeechRec =
-      (window as any).SpeechRecognition ?? (window as any).webkitSpeechRecognition;
+      (window as any).SpeechRecognition ??
+      (window as any).webkitSpeechRecognition;
     if (!SpeechRec) {
-      alert("この環境は音声入力に対応していません。Chrome など対応ブラウザでお試しください。");
+      alert(
+        "この環境は音声入力に対応していません。Chrome など対応ブラウザでお試しください。",
+      );
       return;
     }
     if (listening) {
@@ -135,7 +146,13 @@ function HqPage() {
   const revenuePct = Math.round((REVENUE.monthly / REVENUE.goal) * 100);
 
   // ── quick task board (ダッシュボードから直接タスク管理、Supabase永続化) ──
-  const { tasks, loading: tasksLoading, error: tasksError, addTask: addTaskRemote, toggleTaskDone: toggleTaskDoneRemote } = useTasks();
+  const {
+    tasks,
+    loading: tasksLoading,
+    error: tasksError,
+    addTask: addTaskRemote,
+    toggleTaskDone: toggleTaskDoneRemote,
+  } = useTasks();
   const [newTaskTitle, setNewTaskTitle] = useState("");
   const [newTaskAssignee, setNewTaskAssignee] = useState<EmployeeCode>("B");
   const [taskActionError, setTaskActionError] = useState<string | null>(null);
@@ -143,7 +160,9 @@ function HqPage() {
   const toggleTaskDone = (id: string) => {
     setTaskActionError(null);
     toggleTaskDoneRemote(id).catch((err: unknown) => {
-      setTaskActionError(err instanceof Error ? err.message : "タスクの更新に失敗しました。");
+      setTaskActionError(
+        err instanceof Error ? err.message : "タスクの更新に失敗しました。",
+      );
     });
   };
 
@@ -153,11 +172,19 @@ function HqPage() {
     setTaskActionError(null);
     setNewTaskTitle("");
     addTaskRemote(title, newTaskAssignee).catch((err: unknown) => {
-      setTaskActionError(err instanceof Error ? err.message : "タスクの追加に失敗しました。");
+      setTaskActionError(
+        err instanceof Error ? err.message : "タスクの追加に失敗しました。",
+      );
     });
   };
 
-  const taskGroups = ["IN PROGRESS", "REVIEW", "TODO", "BLOCKED", "DONE"] as const;
+  const taskGroups = [
+    "IN PROGRESS",
+    "REVIEW",
+    "TODO",
+    "BLOCKED",
+    "DONE",
+  ] as const;
   const GROUP_JA: Record<(typeof taskGroups)[number], string> = {
     "IN PROGRESS": "進行中",
     REVIEW: "レビュー中",
@@ -192,7 +219,9 @@ function HqPage() {
       kind: "Meeting" as EventKind,
       owner: newEventOwner,
     }).catch((err: unknown) => {
-      setEventActionError(err instanceof Error ? err.message : "予定の追加に失敗しました。");
+      setEventActionError(
+        err instanceof Error ? err.message : "予定の追加に失敗しました。",
+      );
     });
   };
 
@@ -201,12 +230,15 @@ function HqPage() {
       {/* ── HQ header ── */}
       <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="label-caps">S-QUEST COMPANY 本社 · 2026年8月26日（水）21:38 JST</p>
+          <p className="label-caps">
+            S-QUEST COMPANY 本社 · 2026年8月26日（水）21:38 JST
+          </p>
           <h1 className="mt-2 text-3xl font-semibold tracking-tight sm:text-4xl">
             こんばんは、CEO。
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            現在 {sim.workingCount} 名のAI社員が稼働中。JARVIS が会社を統括しています。
+            現在 {sim.workingCount} 名のAI社員が稼働中。JARVIS
+            が会社を統括しています。
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -249,7 +281,8 @@ function HqPage() {
                 ? {
                     borderColor: "var(--destructive)",
                     color: "var(--destructive)",
-                    background: "color-mix(in oklab, var(--destructive) 12%, transparent)",
+                    background:
+                      "color-mix(in oklab, var(--destructive) 12%, transparent)",
                     animation: "core-pulse 1s ease-in-out infinite",
                   }
                 : { borderColor: "var(--border)" }
@@ -289,7 +322,10 @@ function HqPage() {
           title="AIオフィスフロア"
           hint="A〜FのAI社員はすべて JARVIS を経由して連携します"
           action={
-            <Link to="/employees" className="text-xs text-muted-foreground hover:text-foreground">
+            <Link
+              to="/employees"
+              className="text-xs text-muted-foreground hover:text-foreground"
+            >
               社員一覧
             </Link>
           }
@@ -310,7 +346,10 @@ function HqPage() {
         <SectionTitle
           title="CEOの確認が必要"
           action={
-            <Link to="/approvals" className="text-xs text-muted-foreground hover:text-foreground">
+            <Link
+              to="/approvals"
+              className="text-xs text-muted-foreground hover:text-foreground"
+            >
               承認センターを開く
             </Link>
           }
@@ -338,7 +377,8 @@ function HqPage() {
                   <Tag tone={tone}>{a.level}</Tag>
                   {a.approvalLevel ? (
                     <Tag tone={APPROVAL_LEVEL_TONE[a.approvalLevel]}>
-                      {a.approvalLevel} · {APPROVAL_LEVEL_SHORT_LABEL[a.approvalLevel]}
+                      {a.approvalLevel} ·{" "}
+                      {APPROVAL_LEVEL_SHORT_LABEL[a.approvalLevel]}
                     </Tag>
                   ) : null}
                 </div>
@@ -365,7 +405,10 @@ function HqPage() {
         <SectionTitle
           title="KPIサマリー"
           action={
-            <Link to="/kpi" className="text-xs text-muted-foreground hover:text-foreground">
+            <Link
+              to="/kpi"
+              className="text-xs text-muted-foreground hover:text-foreground"
+            >
               Open KPI
             </Link>
           }
@@ -377,7 +420,9 @@ function HqPage() {
               <p className="num-display mt-2 text-2xl">{k.value}</p>
               <div className="mt-1 flex items-center justify-between">
                 <Delta value={k.change} />
-                <span className="text-[11px] text-muted-foreground">Target {k.target}</span>
+                <span className="text-[11px] text-muted-foreground">
+                  Target {k.target}
+                </span>
               </div>
             </Panel>
           ))}
@@ -390,7 +435,10 @@ function HqPage() {
           <SectionTitle
             title="全社タスク"
             action={
-              <Link to="/tasks" className="text-xs text-muted-foreground hover:text-foreground">
+              <Link
+                to="/tasks"
+                className="text-xs text-muted-foreground hover:text-foreground"
+              >
                 Open tasks
               </Link>
             }
@@ -413,7 +461,9 @@ function HqPage() {
             />
             <select
               value={newTaskAssignee}
-              onChange={(e) => setNewTaskAssignee(e.target.value as EmployeeCode)}
+              onChange={(e) =>
+                setNewTaskAssignee(e.target.value as EmployeeCode)
+              }
               aria-label="担当AI社員"
               className="h-9 rounded-lg border border-border bg-secondary/40 px-2 text-xs outline-none"
             >
@@ -438,7 +488,9 @@ function HqPage() {
             </p>
           ) : null}
           {tasksLoading && !tasks.length ? (
-            <p className="mb-3 text-xs text-muted-foreground">タスクを読み込んでいます…</p>
+            <p className="mb-3 text-xs text-muted-foreground">
+              タスクを読み込んでいます…
+            </p>
           ) : null}
 
           <div className="space-y-4">
@@ -459,7 +511,9 @@ function HqPage() {
                         <button
                           type="button"
                           onClick={() => toggleTaskDone(t.id)}
-                          aria-label={t.status === "DONE" ? "未完了に戻す" : "完了にする"}
+                          aria-label={
+                            t.status === "DONE" ? "未完了に戻す" : "完了にする"
+                          }
                           className="grid size-5 shrink-0 place-items-center rounded-md border text-[10px] font-bold transition-colors"
                           style={
                             t.status === "DONE"
@@ -498,7 +552,9 @@ function HqPage() {
                         >
                           {t.priority}
                         </Tag>
-                        <span className="text-[11px] text-muted-foreground">{t.due}</span>
+                        <span className="text-[11px] text-muted-foreground">
+                          {t.due}
+                        </span>
                       </li>
                     ))}
                   </ul>
@@ -560,11 +616,13 @@ function HqPage() {
                 aria-label="担当"
                 className="h-8 rounded-lg border border-border bg-secondary/40 px-1.5 text-xs outline-none"
               >
-                {(["CEO", "JARVIS", "A", "B", "C", "D", "E", "F"] as const).map((c) => (
-                  <option key={c} value={c}>
-                    {c}
-                  </option>
-                ))}
+                {(["CEO", "JARVIS", "A", "B", "C", "D", "E", "F"] as const).map(
+                  (c) => (
+                    <option key={c} value={c}>
+                      {c}
+                    </option>
+                  ),
+                )}
               </select>
               <button
                 type="submit"
@@ -575,12 +633,19 @@ function HqPage() {
               </button>
             </form>
             {calendarError || eventActionError ? (
-              <p className="mb-2 text-xs text-destructive">⚠️ {calendarError ?? eventActionError}</p>
+              <p className="mb-2 text-xs text-destructive">
+                ⚠️ {calendarError ?? eventActionError}
+              </p>
             ) : null}
             <ul className="space-y-2">
               {(calendarDays[0]?.items ?? []).map((i) => (
-                <li key={i.time + i.title} className="flex items-center gap-3 text-sm">
-                  <span className="num-display w-12 text-xs text-muted-foreground">{i.time}</span>
+                <li
+                  key={i.time + i.title}
+                  className="flex items-center gap-3 text-sm"
+                >
+                  <span className="num-display w-12 text-xs text-muted-foreground">
+                    {i.time}
+                  </span>
                   <span className="flex-1 truncate">{i.title}</span>
                   <Tag tone={empColor(i.who)}>{i.who}</Tag>
                 </li>
@@ -605,7 +670,9 @@ function HqPage() {
                   style={{ background: empColor(a.actor) }}
                 />
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="num-display text-xs text-muted-foreground">{a.at}</span>
+                  <span className="num-display text-xs text-muted-foreground">
+                    {a.at}
+                  </span>
                   <Tag tone={empColor(a.actor)}>{a.actor}</Tag>
                   <span className="text-sm">{a.text}</span>
                 </div>
@@ -615,7 +682,11 @@ function HqPage() {
         </Panel>
       </section>
 
-      <ApprovalModal open={approvalOpen} onOpenChange={setApprovalOpen} request={approval} />
+      <ApprovalModal
+        open={approvalOpen}
+        onOpenChange={setApprovalOpen}
+        request={approval}
+      />
     </AppShell>
   );
 }
