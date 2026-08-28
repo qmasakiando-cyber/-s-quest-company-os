@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { ChevronDown } from "lucide-react";
 import { AppShell } from "@/components/os/AppShell";
 import { Meter, PageHeader, Panel, SectionTitle, SimulationBadge, Tag } from "@/components/os/primitives";
-import { WORKFLOWS, empColor } from "@/lib/company-data";
+import { useWorkflows } from "@/lib/use-workflows";
+import { empColor } from "@/lib/company-data";
 
 export const Route = createFileRoute("/workflows")({
   head: () => ({
@@ -34,7 +35,15 @@ const nodeTone = (node: string) => {
 };
 
 function WorkflowsPage() {
-  const [open, setOpen] = useState<string | null>(WORKFLOWS[0]?.code ?? null);
+  const { workflows: WORKFLOWS, loading, error } = useWorkflows();
+  const [open, setOpen] = useState<string | null>(null);
+  const autoOpened = useRef(false);
+  useEffect(() => {
+    if (!autoOpened.current && WORKFLOWS.length) {
+      autoOpened.current = true;
+      setOpen(WORKFLOWS[0]!.code);
+    }
+  }, [WORKFLOWS]);
 
   return (
     <AppShell>
@@ -44,6 +53,11 @@ function WorkflowsPage() {
         description="Workflowは常に JARVIS を中心に流れます。重要操作の前には必ず承認ゲートが入ります。"
         actions={<SimulationBadge />}
       />
+
+      {error ? <p className="mb-3 text-xs text-destructive">⚠️ {error}</p> : null}
+      {loading && !WORKFLOWS.length ? (
+        <p className="mb-3 text-xs text-muted-foreground">ワークフローを読み込んでいます…</p>
+      ) : null}
 
       <div className="space-y-4">
         {WORKFLOWS.map((w) => {

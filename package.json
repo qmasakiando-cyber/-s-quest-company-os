@@ -11,7 +11,8 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "seed": "node --env-file=.env scripts/seed-supabase.ts",
-    "seed:calendar-kpi": "node --env-file=.env scripts/seed-calendar-kpi.ts"
+    "seed:calendar-kpi": "node --env-file=.env scripts/seed-calendar-kpi.ts",
+    "seed:workflows": "node --env-file=.env scripts/seed-workflows.ts"
   },
   "overrides": {
     "rolldown": "1.2.1"
