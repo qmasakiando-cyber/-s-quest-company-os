@@ -3,7 +3,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { AppShell } from "@/components/os/AppShell";
 import { PageHeader, Panel, Tag, SimulationBadge } from "@/components/os/primitives";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { TASKS, TASK_COLUMNS, empColor, type Task, type TaskStatus } from "@/lib/company-data";
+import { useTasks } from "@/lib/use-tasks";
+import { TASK_COLUMNS, empColor, type Task, type TaskStatus } from "@/lib/company-data";
 
 export const Route = createFileRoute("/tasks")({
   head: () => ({
@@ -65,6 +66,7 @@ function TaskChip({ task, onOpen }: { task: Task; onOpen: () => void }) {
 function TasksPage() {
   const [view, setView] = useState<"Kanban" | "List" | "カレンダー">("Kanban");
   const [active, setActive] = useState<Task | null>(null);
+  const { tasks: TASKS, loading, error } = useTasks();
 
   return (
     <AppShell>
@@ -94,6 +96,11 @@ function TasksPage() {
           </>
         }
       />
+
+      {error ? <p className="mb-3 text-xs text-destructive">⚠️ {error}</p> : null}
+      {loading && !TASKS.length ? (
+        <p className="mb-3 text-xs text-muted-foreground">タスクを読み込んでいます…</p>
+      ) : null}
 
       {view === "Kanban" ? (
         <div className="-mx-4 flex gap-4 overflow-x-auto px-4 pb-4 sm:mx-0 sm:px-0">

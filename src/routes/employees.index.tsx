@@ -1,8 +1,11 @@
+import { useEffect, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { AppShell } from "@/components/os/AppShell";
 import { EmployeeCard } from "@/components/os/EmployeeCard";
 import { PageHeader, Panel, SimulationBadge, Tag } from "@/components/os/primitives";
-import { EMPLOYEES } from "@/lib/company-data";
+import { EMPLOYEES, type EmployeeCode, type EmployeeStatus } from "@/lib/company-data";
+import { listEmployeeLiveStatesFn } from "@/lib/employees.functions";
 
 export const Route = createFileRoute("/employees/")({
   head: () => ({
@@ -24,6 +27,29 @@ export const Route = createFileRoute("/employees/")({
 });
 
 function EmployeesPage() {
+  // 稼働状況（status・progress）は Supabase の ai_employees から読み込む（表示のみ、書き込みなし）
+  const [liveStates, setLiveStates] = useState<
+    Record<EmployeeCode, { status: EmployeeStatus; progress: number }>
+  >({} as Record<EmployeeCode, { status: EmployeeStatus; progress: number }>);
+  const listLiveStates = useServerFn(listEmployeeLiveStatesFn);
+  useEffect(() => {
+    let cancelled = false;
+    listLiveStates()
+      .then((states) => {
+        if (cancelled) return;
+        const map = Object.fromEntries(
+          states.map((s) => [s.code, { status: s.status, progress: s.progress }]),
+        ) as Record<EmployeeCode, { status: EmployeeStatus; progress: number }>;
+        setLiveStates(map);
+      })
+      .catch(() => {
+        // Supabase未到達時は company-data.ts の静的値にフォールバックする
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [listLiveStates]);
+
   return (
     <AppShell>
       <PageHeader
@@ -34,9 +60,11 @@ function EmployeesPage() {
       />
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-        {EMPLOYEES.map((e) => (
-          <EmployeeCard key={e.code} employee={e} />
-        ))}
+        {EMPLOYEES.map((e) => {
+          const live = liveStates[e.code];
+          const employee = live ? { ...e, status: live.status, progress: live.progress } : e;
+          return <EmployeeCard key={e.code} employee={employee} />;
+        })}
       </div>
 
       <Panel className="mt-8 overflow-x-auto p-0">

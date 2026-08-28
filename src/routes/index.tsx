@@ -13,6 +13,7 @@ import {
 } from "@/components/os/primitives";
 import { ApprovalModal } from "@/components/os/ApprovalModal";
 import { useCompanySimulation } from "@/lib/demo-mode";
+import { useTasks } from "@/lib/use-tasks";
 import {
   ALERTS,
   CALENDAR_EVENTS,
@@ -20,8 +21,6 @@ import {
   KPIS,
   QUICK_ACTIONS,
   REVENUE,
-  TASKS as INITIAL_TASKS,
-  type Task,
   type EmployeeCode,
   empColor,
   jpy,
@@ -98,44 +97,27 @@ function HqPage() {
   const approval = ALERTS.find((a) => a.level === "APPROVAL")!;
   const revenuePct = Math.round((REVENUE.monthly / REVENUE.goal) * 100);
 
-  // ── quick task board (ダッシュボードから直接タスク管理) ──
-  const [tasks, setTasks] = useState<Task[]>(INITIAL_TASKS);
+  // ── quick task board (ダッシュボードから直接タスク管理、Supabase永続化) ──
+  const { tasks, loading: tasksLoading, error: tasksError, addTask: addTaskRemote, toggleTaskDone: toggleTaskDoneRemote } = useTasks();
   const [newTaskTitle, setNewTaskTitle] = useState("");
   const [newTaskAssignee, setNewTaskAssignee] = useState<EmployeeCode>("B");
+  const [taskActionError, setTaskActionError] = useState<string | null>(null);
 
   const toggleTaskDone = (id: string) => {
-    setTasks((prev) =>
-      prev.map((t) =>
-        t.id === id
-          ? { ...t, status: t.status === "DONE" ? "IN PROGRESS" : "DONE" }
-          : t,
-      ),
-    );
+    setTaskActionError(null);
+    toggleTaskDoneRemote(id).catch((err: unknown) => {
+      setTaskActionError(err instanceof Error ? err.message : "タスクの更新に失敗しました。");
+    });
   };
 
   const addTask = () => {
     const title = newTaskTitle.trim();
     if (!title) return;
-    const id = `TSK-${Math.floor(1000 + Math.random() * 9000)}`;
-    setTasks((prev) => [
-      {
-        id,
-        title,
-        description: "",
-        status: "TODO",
-        priority: "P2",
-        assignee: newTaskAssignee,
-        createdBy: "CEO",
-        due: "未設定",
-        project: "S-QUEST Company",
-        workflow: "—",
-        dependencies: [],
-        comments: [],
-        log: [{ at: "たった今", text: "CEOがダッシュボードから追加" }],
-      },
-      ...prev,
-    ]);
+    setTaskActionError(null);
     setNewTaskTitle("");
+    addTaskRemote(title, newTaskAssignee).catch((err: unknown) => {
+      setTaskActionError(err instanceof Error ? err.message : "タスクの追加に失敗しました。");
+    });
   };
 
   const taskGroups = ["IN PROGRESS", "REVIEW", "TODO", "BLOCKED", "DONE"] as const;
@@ -372,6 +354,15 @@ function HqPage() {
               追加
             </button>
           </form>
+
+          {tasksError || taskActionError ? (
+            <p className="mb-3 text-xs text-destructive">
+              ⚠️ {tasksError ?? taskActionError}
+            </p>
+          ) : null}
+          {tasksLoading && !tasks.length ? (
+            <p className="mb-3 text-xs text-muted-foreground">タスクを読み込んでいます…</p>
+          ) : null}
 
           <div className="space-y-4">
             {taskGroups.map((group) => {

@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { AppShell } from "@/components/os/AppShell";
 import { EmployeeChat } from "@/components/os/EmployeeChat";
 import {
@@ -11,7 +12,9 @@ import {
   StatusPill,
   Tag,
 } from "@/components/os/primitives";
-import { AI_EMPLOYEES, EMPLOYEES, employeeByCode, TASKS } from "@/lib/company-data";
+import { AI_EMPLOYEES, EMPLOYEES, employeeByCode, type EmployeeStatus } from "@/lib/company-data";
+import { useTasks } from "@/lib/use-tasks";
+import { listEmployeeLiveStatesFn } from "@/lib/employees.functions";
 
 export const Route = createFileRoute("/employees/$code")({
   loader: ({ params }) => {
@@ -65,11 +68,34 @@ function EmployeeDetail() {
   const { employee: e } = Route.useLoaderData();
   const profile = AI_EMPLOYEES[e.code];
   const tone = e.accent;
-  const tasks = TASKS.filter((t) => t.assignee === e.code);
+  const { tasks: allTasks } = useTasks();
+  const tasks = allTasks.filter((t) => t.assignee === e.code);
   const [chatStatus, setChatStatus] = useState<"working" | "idle">("idle");
-  const liveStatus = chatStatus === "working" ? "WORKING" : e.status;
+
+  // 稼働状況（status・progress）は Supabase の ai_employees から読み込む（表示のみ、書き込みなし）
+  const [live, setLive] = useState<{ status: EmployeeStatus; progress: number } | null>(null);
+  const listLiveStates = useServerFn(listEmployeeLiveStatesFn);
+  useEffect(() => {
+    let cancelled = false;
+    listLiveStates()
+      .then((states) => {
+        if (cancelled) return;
+        const found = states.find((s) => s.code === e.code);
+        if (found) setLive({ status: found.status, progress: found.progress });
+      })
+      .catch(() => {
+        // Supabase未到達時は company-data.ts の静的値にフォールバックする
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [e.code, listLiveStates]);
+
+  const baseStatus = live?.status ?? e.status;
+  const baseProgress = live?.progress ?? e.progress;
+  const liveStatus = chatStatus === "working" ? "WORKING" : baseStatus;
   const active = liveStatus === "WORKING" || liveStatus === "THINKING";
-  const activeStepIndex = active ? Math.floor((e.progress / 100) * e.steps.length) : -1;
+  const activeStepIndex = active ? Math.floor((baseProgress / 100) * e.steps.length) : -1;
 
   return (
     <AppShell>
@@ -101,7 +127,7 @@ function EmployeeDetail() {
             <p className="text-sm">{e.currentTask}</p>
             <Meter
               className="mt-4"
-              value={e.progress}
+              value={baseProgress}
               tone={tone}
               label={active ? `${e.code} is ${e.steps[Math.max(0, activeStepIndex)]?.toLowerCase()}…` : "進捗"}
             />
