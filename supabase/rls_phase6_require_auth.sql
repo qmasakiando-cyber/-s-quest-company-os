@@ -28,10 +28,19 @@
 -- このSQLの実行と⑤（REQUIRE_CEO_LOGIN=true への切り替え）は、できるだけ
 -- 間を空けずに連続して行うのが望ましい（実行後すぐにログインし直せば、
 -- authenticatedロールでRLSを通過するようになる）。
+--
+-- 【冪等】各テーブルについて、想定されるどちらのポリシー名（"anon full
+-- access" / "authenticated full access"）が残っていても対応できるよう、
+-- 両方を drop if exists してから作り直す。これは初回実行時に一部テーブル
+-- （tasks以外の7テーブル）で create policy がなぜか反映されず anon のまま
+-- 残っていた事象が実際に起きたため、そのようなケースでも
+-- 「もう一度このファイル全体を再実行するだけで正しい状態に揃う」ようにする
+-- ための対応。既に authenticated 済みのテーブルに対して再実行しても無害。
 -- ============================================================================
 
 -- ai_employees
 drop policy if exists "anon full access" on ai_employees;
+drop policy if exists "authenticated full access" on ai_employees;
 create policy "authenticated full access" on ai_employees
   for all
   to authenticated
@@ -40,6 +49,7 @@ create policy "authenticated full access" on ai_employees
 
 -- tasks
 drop policy if exists "anon full access" on tasks;
+drop policy if exists "authenticated full access" on tasks;
 create policy "authenticated full access" on tasks
   for all
   to authenticated
@@ -48,6 +58,7 @@ create policy "authenticated full access" on tasks
 
 -- calendar_events
 drop policy if exists "anon full access" on calendar_events;
+drop policy if exists "authenticated full access" on calendar_events;
 create policy "authenticated full access" on calendar_events
   for all
   to authenticated
@@ -56,6 +67,7 @@ create policy "authenticated full access" on calendar_events
 
 -- kpis
 drop policy if exists "anon full access" on kpis;
+drop policy if exists "authenticated full access" on kpis;
 create policy "authenticated full access" on kpis
   for all
   to authenticated
@@ -64,6 +76,7 @@ create policy "authenticated full access" on kpis
 
 -- kpi_values
 drop policy if exists "anon full access" on kpi_values;
+drop policy if exists "authenticated full access" on kpi_values;
 create policy "authenticated full access" on kpi_values
   for all
   to authenticated
@@ -72,6 +85,7 @@ create policy "authenticated full access" on kpi_values
 
 -- workflows
 drop policy if exists "anon full access" on workflows;
+drop policy if exists "authenticated full access" on workflows;
 create policy "authenticated full access" on workflows
   for all
   to authenticated
@@ -80,6 +94,7 @@ create policy "authenticated full access" on workflows
 
 -- expenses
 drop policy if exists "anon full access" on expenses;
+drop policy if exists "authenticated full access" on expenses;
 create policy "authenticated full access" on expenses
   for all
   to authenticated
@@ -88,6 +103,7 @@ create policy "authenticated full access" on expenses
 
 -- ai_outputs
 drop policy if exists "anon full access" on ai_outputs;
+drop policy if exists "authenticated full access" on ai_outputs;
 create policy "authenticated full access" on ai_outputs
   for all
   to authenticated
