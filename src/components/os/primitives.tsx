@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { STATUS_LABEL, type EmployeeStatus } from "@/lib/company-data";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 
 export function Panel({
   className,
@@ -207,6 +208,94 @@ export function EmptyState({
         </button>
       ) : null}
     </div>
+  );
+}
+
+/** EmptyStateと同じ構造の、エラー表示用Feedbackコンポーネント（Component Library Feedback / ErrorState）。 */
+export function ErrorState({
+  title,
+  body,
+  actionLabel,
+  onAction,
+}: {
+  title: string;
+  body: string;
+  actionLabel?: string;
+  onAction?: () => void;
+}) {
+  return (
+    <div
+      className="panel flex flex-col items-center gap-3 px-6 py-12 text-center"
+      style={{ borderColor: "color-mix(in oklab, var(--destructive) 30%, var(--border))" }}
+    >
+      <div
+        className="size-10 rounded-full border"
+        style={{
+          borderColor: "color-mix(in oklab, var(--destructive) 45%, transparent)",
+          background: "color-mix(in oklab, var(--destructive) 14%, transparent)",
+        }}
+      />
+      <h3 className="text-sm font-semibold text-destructive">{title}</h3>
+      <p className="max-w-sm text-sm text-muted-foreground">{body}</p>
+      {actionLabel ? (
+        <button
+          onClick={onAction}
+          className="mt-2 rounded-lg border px-4 py-2 text-xs font-semibold transition-opacity hover:opacity-90"
+          style={{ borderColor: "var(--destructive)", color: "var(--destructive)" }}
+        >
+          {actionLabel}
+        </button>
+      ) : null}
+    </div>
+  );
+}
+
+/** 破壊的・確定操作の前に一段確認を挟む共通ダイアログ（Component Library Feedback / ConfirmDialog）。 */
+export function ConfirmDialog({
+  open,
+  onOpenChange,
+  title,
+  description,
+  confirmLabel = "実行",
+  cancelLabel = "キャンセル",
+  danger = false,
+  onConfirm,
+}: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  title: string;
+  description?: string;
+  confirmLabel?: string;
+  cancelLabel?: string;
+  /** trueの場合、確認ボタンをdestructiveトーンで表示する。 */
+  danger?: boolean;
+  onConfirm: () => void;
+}) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogTitle className="text-base font-semibold">{title}</DialogTitle>
+        {description ? <p className="text-sm text-muted-foreground">{description}</p> : null}
+        <div className="mt-2 flex justify-end gap-2">
+          <button
+            onClick={() => onOpenChange(false)}
+            className="rounded-lg border border-border px-4 py-2 text-xs font-semibold hover:bg-accent"
+          >
+            {cancelLabel}
+          </button>
+          <button
+            onClick={() => {
+              onOpenChange(false);
+              onConfirm();
+            }}
+            className="rounded-lg px-4 py-2 text-xs font-semibold text-primary-foreground hover:opacity-90"
+            style={{ background: danger ? "var(--destructive)" : "var(--primary)" }}
+          >
+            {confirmLabel}
+          </button>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 

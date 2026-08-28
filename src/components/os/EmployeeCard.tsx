@@ -1,11 +1,10 @@
 import { Link } from "@tanstack/react-router";
-import { AI_EMPLOYEES, type AIEmployee } from "@/lib/company-data";
+import { AI_EMPLOYEES, getWorkingCaption, type AIEmployee } from "@/lib/company-data";
 import { Meter, StatusPill } from "./primitives";
 
 export function EmployeeCard({ employee }: { employee: AIEmployee }) {
   const tone = employee.accent;
   const profile = AI_EMPLOYEES[employee.code];
-  const active = employee.status === "WORKING" || employee.status === "THINKING";
 
   return (
     <article
@@ -66,7 +65,7 @@ export function EmployeeCard({ employee }: { employee: AIEmployee }) {
         className="mt-4"
         value={employee.progress}
         tone={tone}
-        label={active ? `${employee.name} is working…` : "進捗"}
+        label={getWorkingCaption(employee.code, employee.status)}
       />
 
       <div className="mt-4 rounded-xl border border-border bg-secondary/30 px-3 py-2 text-[11px]">

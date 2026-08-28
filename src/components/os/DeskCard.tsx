@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { Meter } from "./primitives";
 import { PixelDesk } from "./PixelDesk";
-import { AI_EMPLOYEES } from "@/lib/company-data";
+import { AI_EMPLOYEES, getWorkingCaption } from "@/lib/company-data";
 import { LIVE_STATUS_LABEL, LIVE_STATUS_TONE, type LiveEmployee } from "@/lib/demo-mode";
 
 export function DeskCard({
@@ -82,6 +82,9 @@ export function DeskCard({
 
       <p className="mt-3 text-[11px]" style={{ color: statusTone }}>
         {LIVE_STATUS_LABEL[employee.status]}
+      </p>
+      <p className="mt-0.5 text-[10px] italic text-muted-foreground">
+        {getWorkingCaption(employee.code, employee.status)}
       </p>
       <p className="mt-1 line-clamp-2 text-[13px] text-foreground/90">{employee.currentTask}</p>
       <p className="mt-1 text-[10px] text-muted-foreground">{profile.department}</p>

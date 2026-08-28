@@ -66,6 +66,100 @@ export function computeCompanyStatus(statuses: EmployeeStatus[]): CompanyStatus 
 export type EmployeeCode = "A" | "B" | "C" | "D" | "E" | "F";
 
 /**
+ * 社員カードの「働いている感」キャプション（UI DESIGN SYSTEM §11）。
+ * LiveStatus（デモ稼働シミュレーション）と EmployeeStatus（Supabase実データ）の
+ * どちらの状態文字列も toCaptionBucket() で7バケットに正規化してから引く。
+ * Math.random() 等の非決定的な値は使わない（SSR/クライアントのhydration不一致を避けるため）。
+ */
+export type CaptionBucket = "IDLE" | "THINKING" | "WORKING" | "WAITING" | "REVIEW" | "ERROR" | "DONE";
+
+export function toCaptionBucket(status: string): CaptionBucket {
+  switch (status) {
+    case "THINKING":
+      return "THINKING";
+    case "WORKING":
+    case "READY":
+    case "REPORTING":
+      return "WORKING";
+    case "WAITING":
+    case "APPROVAL_REQUIRED":
+    case "BLOCKED":
+      return "WAITING";
+    case "REVIEW":
+      return "REVIEW";
+    case "ERROR":
+      return "ERROR";
+    case "COMPLETED":
+    case "DONE":
+      return "DONE";
+    case "IDLE":
+    default:
+      return "IDLE";
+  }
+}
+
+export const EMPLOYEE_WORKING_CAPTION: Record<EmployeeCode, Record<CaptionBucket, string>> = {
+  A: {
+    IDLE: "次の調査対象を待機中",
+    THINKING: "調査方針を検討中…",
+    WORKING: "情報を検索・分析中…",
+    WAITING: "依存タスクの完了待ち",
+    REVIEW: "収集データを検証中…",
+    ERROR: "調査中にエラーが発生",
+    DONE: "調査レポートを提出済み",
+  },
+  B: {
+    IDLE: "次の戦略テーマを待機中",
+    THINKING: "戦略仮説を組み立て中…",
+    WORKING: "戦略ロジックを設計中…",
+    WAITING: "A・Dのデータ待ち",
+    REVIEW: "戦略案をレビュー中…",
+    ERROR: "戦略設計でエラーが発生",
+    DONE: "戦略案を提出済み",
+  },
+  C: {
+    IDLE: "次の制作依頼を待機中",
+    THINKING: "コンセプトを検討中…",
+    WORKING: "デザイン・UIを制作中…",
+    WAITING: "戦略確定を待機中",
+    REVIEW: "成果物をレビュー中…",
+    ERROR: "制作中にエラーが発生",
+    DONE: "成果物を提出済み",
+  },
+  D: {
+    IDLE: "次の商談機会を待機中",
+    THINKING: "提案方針を検討中…",
+    WORKING: "商談・提案を実行中…",
+    WAITING: "マーケ施策の結果待ち",
+    REVIEW: "商談内容をレビュー中…",
+    ERROR: "営業活動でエラーが発生",
+    DONE: "商談結果を報告済み",
+  },
+  E: {
+    IDLE: "次のキャンペーンを待機中",
+    THINKING: "施策アイデアを検討中…",
+    WORKING: "SNS・広告を運用中…",
+    WAITING: "戦略確定を待機中",
+    REVIEW: "投稿・広告をレビュー中…",
+    ERROR: "運用中にエラーが発生",
+    DONE: "施策結果を報告済み",
+  },
+  F: {
+    IDLE: "次の監査対象を待機中",
+    THINKING: "チェック観点を検討中…",
+    WORKING: "品質・整合性を検証中…",
+    WAITING: "成果物の提出待ち",
+    REVIEW: "最終レビュー中…",
+    ERROR: "検証中に不整合を検知",
+    DONE: "監査結果を報告済み",
+  },
+};
+
+export function getWorkingCaption(code: EmployeeCode, status: string): string {
+  return EMPLOYEE_WORKING_CAPTION[code][toCaptionBucket(status)];
+}
+
+/**
  * 権限ラベルの標準12ドメイン（COMPANY OSの13カテゴリ = OS_CATEGORIES から、
  * AI社員システム自体を指す "AI" を除いた、業務ドメインのみのセット）。
  * 各AI社員の permissions.read / permissions.write はこの語彙に統一する。

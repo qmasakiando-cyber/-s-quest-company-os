@@ -12,10 +12,12 @@ import {
   Home,
   LayoutGrid,
   Menu,
+  Network,
   Search,
   Settings,
   ShieldCheck,
   Sparkles,
+  UserCircle,
   Wallet,
   Workflow as WorkflowIcon,
   X,
@@ -39,6 +41,7 @@ const NAV = [
   { to: "/tasks", label: "タスク", icon: ClipboardList },
   { to: "/calendar", label: "カレンダー", icon: CalendarDays },
   { to: "/employees", label: "AI社員", icon: Bot },
+  { to: "/company-map", label: "組織図", icon: Network },
   { to: "/workflows", label: "ワークフロー", icon: WorkflowIcon },
   { to: "/company-os", label: "会社データベース", icon: LayoutGrid },
   { to: "/kpi", label: "KPI", icon: Gauge },
@@ -46,6 +49,7 @@ const NAV = [
   { to: "/projects", label: "プロジェクト", icon: Activity },
   { to: "/reports", label: "レポート", icon: FileText },
   { to: "/audit", label: "監査ログ", icon: ShieldCheck },
+  { to: "/profile", label: "CEO プロフィール", icon: UserCircle },
   { to: "/settings", label: "設定", icon: Settings },
 ] as const;
 
@@ -179,6 +183,8 @@ function CommandPalette({
               <CommandItem onSelect={() => go("/revenue")}>売上を開く</CommandItem>
               <CommandItem onSelect={() => go("/workflows")}>ワークフローを実行</CommandItem>
               <CommandItem onSelect={() => go("/company-os")}>Search Company OS</CommandItem>
+              <CommandItem onSelect={() => go("/company-map")}>組織図を開く</CommandItem>
+              <CommandItem onSelect={() => go("/profile")}>CEO プロフィールを開く</CommandItem>
             </CommandGroup>
             <CommandGroup heading="AI社員">
               {EMPLOYEES.map((e) => (
