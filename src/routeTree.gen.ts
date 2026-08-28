@@ -15,6 +15,7 @@ import { Route as AuditRouteImport } from './routes/audit'
 import { Route as CalendarRouteImport } from './routes/calendar'
 import { Route as CompanyMapRouteImport } from './routes/company-map'
 import { Route as CompanyOsRouteImport } from './routes/company-os'
+import { Route as DecisionsRouteImport } from './routes/decisions'
 import { Route as ErrorsRouteImport } from './routes/errors'
 import { Route as JarvisRouteImport } from './routes/jarvis'
 import { Route as KpiRouteImport } from './routes/kpi'
@@ -59,6 +60,11 @@ const CompanyMapRoute = CompanyMapRouteImport.update({
 const CompanyOsRoute = CompanyOsRouteImport.update({
   id: '/company-os',
   path: '/company-os',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DecisionsRoute = DecisionsRouteImport.update({
+  id: '/decisions',
+  path: '/decisions',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ErrorsRoute = ErrorsRouteImport.update({
@@ -144,6 +150,7 @@ export interface FileRoutesByFullPath {
   '/calendar': typeof CalendarRoute
   '/company-map': typeof CompanyMapRoute
   '/company-os': typeof CompanyOsRoute
+  '/decisions': typeof DecisionsRoute
   '/errors': typeof ErrorsRoute
   '/jarvis': typeof JarvisRoute
   '/kpi': typeof KpiRoute
@@ -167,6 +174,7 @@ export interface FileRoutesByTo {
   '/calendar': typeof CalendarRoute
   '/company-map': typeof CompanyMapRoute
   '/company-os': typeof CompanyOsRoute
+  '/decisions': typeof DecisionsRoute
   '/errors': typeof ErrorsRoute
   '/jarvis': typeof JarvisRoute
   '/kpi': typeof KpiRoute
@@ -191,6 +199,7 @@ export interface FileRoutesById {
   '/calendar': typeof CalendarRoute
   '/company-map': typeof CompanyMapRoute
   '/company-os': typeof CompanyOsRoute
+  '/decisions': typeof DecisionsRoute
   '/errors': typeof ErrorsRoute
   '/jarvis': typeof JarvisRoute
   '/kpi': typeof KpiRoute
@@ -216,6 +225,7 @@ export interface FileRouteTypes {
     | '/calendar'
     | '/company-map'
     | '/company-os'
+    | '/decisions'
     | '/errors'
     | '/jarvis'
     | '/kpi'
@@ -239,6 +249,7 @@ export interface FileRouteTypes {
     | '/calendar'
     | '/company-map'
     | '/company-os'
+    | '/decisions'
     | '/errors'
     | '/jarvis'
     | '/kpi'
@@ -262,6 +273,7 @@ export interface FileRouteTypes {
     | '/calendar'
     | '/company-map'
     | '/company-os'
+    | '/decisions'
     | '/errors'
     | '/jarvis'
     | '/kpi'
@@ -286,6 +298,7 @@ export interface RootRouteChildren {
   CalendarRoute: typeof CalendarRoute
   CompanyMapRoute: typeof CompanyMapRoute
   CompanyOsRoute: typeof CompanyOsRoute
+  DecisionsRoute: typeof DecisionsRoute
   ErrorsRoute: typeof ErrorsRoute
   JarvisRoute: typeof JarvisRoute
   KpiRoute: typeof KpiRoute
@@ -345,6 +358,13 @@ declare module '@tanstack/react-router' {
       path: '/company-os'
       fullPath: '/company-os'
       preLoaderRoute: typeof CompanyOsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/decisions': {
+      id: '/decisions'
+      path: '/decisions'
+      fullPath: '/decisions'
+      preLoaderRoute: typeof DecisionsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/errors': {
@@ -462,6 +482,7 @@ const rootRouteChildren: RootRouteChildren = {
   CalendarRoute: CalendarRoute,
   CompanyMapRoute: CompanyMapRoute,
   CompanyOsRoute: CompanyOsRoute,
+  DecisionsRoute: DecisionsRoute,
   ErrorsRoute: ErrorsRoute,
   JarvisRoute: JarvisRoute,
   KpiRoute: KpiRoute,
