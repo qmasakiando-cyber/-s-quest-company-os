@@ -69,3 +69,15 @@ alter table tasks
   add column if not exists workflow_id uuid references workflows (id) on delete set null;
 
 create index if not exists idx_tasks_workflow_id on tasks (workflow_id);
+
+-- ----------------------------------------------------------------------------
+-- Migration 004 — workflows.approval_level (L0〜L3).
+-- See supabase/migration_004_workflows_approval_level.sql for the standalone
+-- migration. tasks does not get its own column - it inherits the level via
+-- tasks.workflow_id -> workflows.approval_level.
+-- ----------------------------------------------------------------------------
+alter table workflows
+  add column if not exists approval_level text
+    check (approval_level in ('L0', 'L1', 'L2', 'L3'));
+
+create index if not exists idx_tasks_workflow_id on tasks (workflow_id);

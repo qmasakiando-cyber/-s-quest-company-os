@@ -4,7 +4,11 @@ import { ChevronDown } from "lucide-react";
 import { AppShell } from "@/components/os/AppShell";
 import { Meter, PageHeader, Panel, SectionTitle, SimulationBadge, Tag } from "@/components/os/primitives";
 import { useWorkflows } from "@/lib/use-workflows";
-import { empColor } from "@/lib/company-data";
+import {
+  APPROVAL_LEVEL_SHORT_LABEL,
+  APPROVAL_LEVEL_TONE,
+  empColor,
+} from "@/lib/company-data";
 
 export const Route = createFileRoute("/workflows")({
   head: () => ({
@@ -85,6 +89,11 @@ function WorkflowsPage() {
                 >
                   {w.status}
                 </Tag>
+                {w.approvalLevel ? (
+                  <Tag tone={APPROVAL_LEVEL_TONE[w.approvalLevel]}>
+                    {w.approvalLevel} · {APPROVAL_LEVEL_SHORT_LABEL[w.approvalLevel]}
+                  </Tag>
+                ) : null}
                 <span className="text-[11px] text-muted-foreground">
                   {w.runs} runs · {w.successRate}%
                 </span>
@@ -129,6 +138,12 @@ function WorkflowsPage() {
                       ["Input", w.input],
                       ["Output", w.output],
                       ["Approval Gate", w.approvalGate],
+                      [
+                        "Approval Level",
+                        w.approvalLevel
+                          ? `${w.approvalLevel} · ${APPROVAL_LEVEL_SHORT_LABEL[w.approvalLevel]}`
+                          : "未設定",
+                      ],
                       ["Failure Branch", w.failureBranch],
                       ["OS Update", w.osUpdate],
                       ["Retry Rule", w.retry],

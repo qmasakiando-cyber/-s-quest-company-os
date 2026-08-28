@@ -577,6 +577,8 @@ export const ALERTS: {
   reason: string;
   risk: string;
   expected: string;
+  /** 関連するWorkflowの承認レベル（あれば）。WF側のapproval_levelと対応。 */
+  approvalLevel?: ApprovalLevel;
 }[] = [
   {
     level: "APPROVAL",
@@ -586,6 +588,8 @@ export const ALERTS: {
     reason: "診断開始率の改善のため、新導線LPを公開したい",
     risk: "MEDIUM — 公開後の表現修正はブランド影響あり",
     expected: "Diagnosis Starts +12〜18% / CV +0.6pt",
+    // 本番Deploy・外部公開 = WF-02 と同種の承認ゲート
+    approvalLevel: "L2",
   },
   {
     level: "WARNING",
@@ -604,8 +608,33 @@ export const ALERTS: {
     reason: "リード減少が売上に直結",
     risk: "HIGH — 月次目標未達の可能性",
     expected: "改善戦略と実行タスクの生成",
+    // 施策実行前に CEO 承認 = WF-06 の承認ゲート
+    approvalLevel: "L3",
   },
 ];
+
+export type ApprovalLevel = "L0" | "L1" | "L2" | "L3";
+
+export const APPROVAL_LEVEL_LABEL: Record<ApprovalLevel, string> = {
+  L0: "情報整理・下書き（AI単独実行可）",
+  L1: "通常業務（AI単独実行可）",
+  L2: "外部公開・重要施策（JARVISへ確認）",
+  L3: "会社の重要意思決定（CEO承認必須）",
+};
+
+export const APPROVAL_LEVEL_SHORT_LABEL: Record<ApprovalLevel, string> = {
+  L0: "AI単独実行可",
+  L1: "AI単独実行可",
+  L2: "JARVISへ確認",
+  L3: "CEO承認必須",
+};
+
+export const APPROVAL_LEVEL_TONE: Record<ApprovalLevel, string> = {
+  L0: "var(--muted-foreground)",
+  L1: "var(--success)",
+  L2: "var(--warning)",
+  L3: "var(--destructive)",
+};
 
 export interface Workflow {
   code: string;
@@ -625,6 +654,10 @@ export interface Workflow {
   osUpdate: string;
   retry: string;
   timeout: string;
+  /** Obsidian「AI社員間Workflow 詳細仕様書 V1.0」の承認レベル（L0〜L3）。
+   *  Supabase workflows.approval_level から読み込む。company-data.ts の
+   *  WORKFLOWS モックは未設定（DB側が正）。 */
+  approvalLevel?: ApprovalLevel;
 }
 
 export const WORKFLOWS: Workflow[] = [

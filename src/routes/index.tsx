@@ -19,6 +19,8 @@ import { useKpis } from "@/lib/use-kpis";
 import type { EventKind, EventOwner } from "@/lib/calendar.server";
 import {
   ALERTS,
+  APPROVAL_LEVEL_SHORT_LABEL,
+  APPROVAL_LEVEL_TONE,
   DASHBOARD_KPI_NAMES,
   QUICK_ACTIONS,
   REVENUE,
@@ -294,7 +296,14 @@ function HqPage() {
                   background: `color-mix(in oklab, ${tone} 8%, transparent)`,
                 }}
               >
-                <Tag tone={tone}>{a.level}</Tag>
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <Tag tone={tone}>{a.level}</Tag>
+                  {a.approvalLevel ? (
+                    <Tag tone={APPROVAL_LEVEL_TONE[a.approvalLevel]}>
+                      {a.approvalLevel} · {APPROVAL_LEVEL_SHORT_LABEL[a.approvalLevel]}
+                    </Tag>
+                  ) : null}
+                </div>
                 <p className="mt-2 text-sm font-semibold">{a.title}</p>
                 <p className="mt-1 text-xs text-muted-foreground">{a.body}</p>
                 {a.level === "APPROVAL" ? (

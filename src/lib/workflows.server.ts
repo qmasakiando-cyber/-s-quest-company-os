@@ -1,5 +1,5 @@
 import { getSupabaseServerClient } from "./supabase.server";
-import type { Workflow } from "./company-data";
+import type { ApprovalLevel, Workflow } from "./company-data";
 
 interface WorkflowRow {
   code: string;
@@ -19,6 +19,7 @@ interface WorkflowRow {
   os_update: string | null;
   retry: string | null;
   timeout: string | null;
+  approval_level: ApprovalLevel | null;
 }
 
 function rowToWorkflow(row: WorkflowRow): Workflow {
@@ -40,6 +41,7 @@ function rowToWorkflow(row: WorkflowRow): Workflow {
     osUpdate: row.os_update ?? "",
     retry: row.retry ?? "",
     timeout: row.timeout ?? "",
+    ...(row.approval_level ? { approvalLevel: row.approval_level } : {}),
   };
 }
 

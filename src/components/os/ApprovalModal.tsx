@@ -1,5 +1,10 @@
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import {
+  APPROVAL_LEVEL_LABEL,
+  APPROVAL_LEVEL_TONE,
+  type ApprovalLevel,
+} from "@/lib/company-data";
 import { Tag } from "./primitives";
 
 export interface ApprovalRequest {
@@ -9,6 +14,8 @@ export interface ApprovalRequest {
   reason: string;
   risk: string;
   expected: string;
+  /** L0〜L3。未指定なら従来どおり固定の「外部公開」ゲート表示にフォールバック。 */
+  approvalLevel?: ApprovalLevel;
 }
 
 export function ApprovalModal({
@@ -47,7 +54,11 @@ export function ApprovalModal({
           ))}
         </dl>
         <div className="mt-2 flex items-center justify-between gap-3">
-          <Tag tone="var(--warning)">Approval Gate · 外部公開</Tag>
+          <Tag tone={request.approvalLevel ? APPROVAL_LEVEL_TONE[request.approvalLevel] : "var(--warning)"}>
+            {request.approvalLevel
+              ? `${request.approvalLevel} · ${APPROVAL_LEVEL_LABEL[request.approvalLevel]}`
+              : "Approval Gate · 外部公開"}
+          </Tag>
           <div className="flex gap-2">
             <button
               onClick={() => decide(false)}
