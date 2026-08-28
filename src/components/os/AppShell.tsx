@@ -2,6 +2,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import {
   Activity,
+  AlertTriangle,
   Bell,
   Bot,
   CalendarDays,
@@ -45,6 +46,7 @@ const NAV = [
   { to: "/company-map", label: "組織図", icon: Network },
   { to: "/workflows", label: "ワークフロー", icon: WorkflowIcon },
   { to: "/approvals", label: "承認センター", icon: ClipboardCheck },
+  { to: "/errors", label: "エラーセンター", icon: AlertTriangle },
   { to: "/company-os", label: "会社データベース", icon: LayoutGrid },
   { to: "/kpi", label: "KPI", icon: Gauge },
   { to: "/revenue", label: "売上", icon: Wallet },
@@ -187,6 +189,7 @@ function CommandPalette({
               <CommandItem onSelect={() => go("/company-os")}>Search Company OS</CommandItem>
               <CommandItem onSelect={() => go("/company-map")}>組織図を開く</CommandItem>
               <CommandItem onSelect={() => go("/approvals")}>承認センターを開く</CommandItem>
+              <CommandItem onSelect={() => go("/errors")}>エラーセンターを開く</CommandItem>
               <CommandItem onSelect={() => go("/profile")}>CEO プロフィールを開く</CommandItem>
             </CommandGroup>
             <CommandGroup heading="AI社員">

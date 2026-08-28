@@ -16,6 +16,40 @@ export async function listEmployeeLiveStates(): Promise<EmployeeLiveState[]> {
   return (data ?? []) as EmployeeLiveState[];
 }
 
+export interface EmployeeErrorState {
+  code: EmployeeCode;
+  status: EmployeeStatus;
+  currentTask: string | null;
+  errorCount: number;
+  lastActivityAt: string | null;
+}
+
+interface ErrorRow {
+  code: EmployeeCode;
+  status: EmployeeStatus;
+  current_task: string | null;
+  error_count: number | null;
+  last_activity_at: string | null;
+}
+
+/** Read-only: employees currently in ERROR status, for the Error Center. */
+export async function listErrorEmployees(): Promise<EmployeeErrorState[]> {
+  const supabase = getSupabaseServerClient();
+  const { data, error } = await supabase
+    .from("ai_employees")
+    .select("code, status, current_task, error_count, last_activity_at")
+    .eq("status", "ERROR");
+  if (error) throw new Error(`AI社員の状態取得に失敗しました: ${error.message}`);
+  const rows = (data ?? []) as ErrorRow[];
+  return rows.map((r) => ({
+    code: r.code,
+    status: r.status,
+    currentTask: r.current_task,
+    errorCount: r.error_count ?? 0,
+    lastActivityAt: r.last_activity_at,
+  }));
+}
+
 const nowIso = () => new Date().toISOString();
 
 async function getEmployeeStatus(code: EmployeeCode): Promise<EmployeeStatus | null> {
@@ -146,6 +180,26 @@ export async function onEmployeeChatError(code: EmployeeCode): Promise<void> {
   const { error } = await supabase
     .from("ai_employees")
     .update({ status: "ERROR", error_count: errorCount, last_activity_at: nowIso() })
+    .eq("code", code);
+  if (error) throw new Error(`AI社員状態の更新に失敗しました: ${error.message}`);
+}
+
+/**
+ * RETRY（Error Center）：ERROR状態の社員をIDLEへ戻す。current_task/progress/started_at
+ * をクリアする（onTaskCompletedと同じ更新パターン）。実際の再送信・再実行は行わない（SIMULATION）。
+ * error_count は履歴として保持し、リセットしない。
+ */
+export async function retryEmployee(code: EmployeeCode): Promise<void> {
+  const supabase = getSupabaseServerClient();
+  const { error } = await supabase
+    .from("ai_employees")
+    .update({
+      status: "IDLE",
+      current_task: null,
+      progress: 0,
+      started_at: null,
+      last_activity_at: nowIso(),
+    })
     .eq("code", code);
   if (error) throw new Error(`AI社員状態の更新に失敗しました: ${error.message}`);
 }
