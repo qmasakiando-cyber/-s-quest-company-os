@@ -14,11 +14,12 @@ import {
 import { ApprovalModal } from "@/components/os/ApprovalModal";
 import { useCompanySimulation } from "@/lib/demo-mode";
 import { useTasks } from "@/lib/use-tasks";
+import { useCalendar } from "@/lib/use-calendar";
+import { useKpis } from "@/lib/use-kpis";
+import type { EventKind, EventOwner } from "@/lib/calendar.server";
 import {
   ALERTS,
-  CALENDAR_EVENTS,
   DASHBOARD_KPI_NAMES,
-  KPIS,
   QUICK_ACTIONS,
   REVENUE,
   type EmployeeCode,
@@ -90,9 +91,13 @@ function HqPage() {
     rec.start();
   };
 
+  const { kpis: KPIS } = useKpis();
   const dashboardKpis = useMemo(
-    () => DASHBOARD_KPI_NAMES.map((n) => KPIS.find((k) => k.name === n)!).filter(Boolean),
-    [],
+    () =>
+      DASHBOARD_KPI_NAMES.map((n) => KPIS.find((k) => k.name === n)).filter(
+        (k): k is NonNullable<typeof k> => Boolean(k),
+      ),
+    [KPIS],
   );
   const approval = ALERTS.find((a) => a.level === "APPROVAL")!;
   const revenuePct = Math.round((REVENUE.monthly / REVENUE.goal) * 100);
@@ -132,6 +137,31 @@ function HqPage() {
   const send = (text: string) => {
     if (!text.trim()) return;
     void navigate({ to: "/jarvis", search: { q: text } });
+  };
+
+  // ── quick calendar widget（ダッシュボードから予定を追加、Supabase永続化） ──
+  const { days: calendarDays, error: calendarError, addEvent } = useCalendar();
+  const [newEventTitle, setNewEventTitle] = useState("");
+  const [newEventTime, setNewEventTime] = useState("18:00");
+  const [newEventOwner, setNewEventOwner] = useState<EventOwner>("CEO");
+  const [eventActionError, setEventActionError] = useState<string | null>(null);
+
+  const addCalendarEvent = () => {
+    const title = newEventTitle.trim();
+    if (!title) return;
+    setEventActionError(null);
+    const [hh, mm] = newEventTime.split(":").map(Number);
+    const startAt = new Date();
+    startAt.setHours(hh ?? 18, mm ?? 0, 0, 0);
+    setNewEventTitle("");
+    addEvent({
+      title,
+      startAt: startAt.toISOString(),
+      kind: "Meeting" as EventKind,
+      owner: newEventOwner,
+    }).catch((err: unknown) => {
+      setEventActionError(err instanceof Error ? err.message : "予定の追加に失敗しました。");
+    });
   };
 
   return (
@@ -456,9 +486,53 @@ function HqPage() {
                 </Link>
               }
             />
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                addCalendarEvent();
+              }}
+              className="mb-3 flex flex-wrap items-center gap-1.5"
+            >
+              <input
+                value={newEventTitle}
+                onChange={(e) => setNewEventTitle(e.target.value)}
+                placeholder="予定を追加..."
+                aria-label="新しい予定"
+                className="h-8 min-w-[120px] flex-1 rounded-lg border border-border bg-secondary/40 px-2.5 text-xs outline-none placeholder:text-muted-foreground focus:border-primary/60"
+              />
+              <input
+                type="time"
+                value={newEventTime}
+                onChange={(e) => setNewEventTime(e.target.value)}
+                aria-label="時刻"
+                className="h-8 rounded-lg border border-border bg-secondary/40 px-2 text-xs outline-none"
+              />
+              <select
+                value={newEventOwner}
+                onChange={(e) => setNewEventOwner(e.target.value as EventOwner)}
+                aria-label="担当"
+                className="h-8 rounded-lg border border-border bg-secondary/40 px-1.5 text-xs outline-none"
+              >
+                {(["CEO", "JARVIS", "A", "B", "C", "D", "E", "F"] as const).map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </select>
+              <button
+                type="submit"
+                className="inline-flex h-8 items-center gap-1 rounded-lg bg-primary px-2.5 text-[11px] font-semibold text-primary-foreground transition-opacity hover:opacity-90"
+              >
+                <Plus className="size-3.5" aria-hidden />
+                追加
+              </button>
+            </form>
+            {calendarError || eventActionError ? (
+              <p className="mb-2 text-xs text-destructive">⚠️ {calendarError ?? eventActionError}</p>
+            ) : null}
             <ul className="space-y-2">
-              {(CALENDAR_EVENTS[0]?.items ?? []).map((i) => (
-                <li key={i.time} className="flex items-center gap-3 text-sm">
+              {(calendarDays[0]?.items ?? []).map((i) => (
+                <li key={i.time + i.title} className="flex items-center gap-3 text-sm">
                   <span className="num-display w-12 text-xs text-muted-foreground">{i.time}</span>
                   <span className="flex-1 truncate">{i.title}</span>
                   <Tag tone={empColor(i.who)}>{i.who}</Tag>

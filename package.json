@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "lint": "eslint .",
     "format": "prettier --write .",
-    "seed": "node --env-file=.env scripts/seed-supabase.ts"
+    "seed": "node --env-file=.env scripts/seed-supabase.ts",
+    "seed:calendar-kpi": "node --env-file=.env scripts/seed-calendar-kpi.ts"
   },
   "overrides": {
     "rolldown": "1.2.1"

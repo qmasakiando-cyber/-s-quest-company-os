@@ -3,7 +3,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Area, AreaChart, ResponsiveContainer } from "recharts";
 import { AppShell } from "@/components/os/AppShell";
 import { Delta, PageHeader, Panel, SimulationBadge, Tag } from "@/components/os/primitives";
-import { KPIS, empColor, type Kpi } from "@/lib/company-data";
+import { useKpis } from "@/lib/use-kpis";
+import { empColor, type Kpi } from "@/lib/company-data";
 
 export const Route = createFileRoute("/kpi")({
   head: () => ({
@@ -81,6 +82,7 @@ function KpiCard({ kpi }: { kpi: Kpi }) {
 
 function KpiPage() {
   const [cat, setCat] = useState<(typeof CATEGORIES)[number]>("ALL");
+  const { kpis: KPIS, loading, error } = useKpis();
   const list = cat === "ALL" ? KPIS : KPIS.filter((k) => k.category === cat);
   const risky = KPIS.filter((k) => k.change < 0);
 
@@ -92,6 +94,11 @@ function KpiPage() {
         description="主要KPIが目標比 -10% を超えると WF-06（KPI → Strategy）が自動起動します。"
         actions={<SimulationBadge />}
       />
+
+      {error ? <p className="mb-3 text-xs text-destructive">⚠️ {error}</p> : null}
+      {loading && !KPIS.length ? (
+        <p className="mb-3 text-xs text-muted-foreground">KPIを読み込んでいます…</p>
+      ) : null}
 
       {risky.length ? (
         <Panel

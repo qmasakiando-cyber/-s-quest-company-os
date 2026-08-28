@@ -2,7 +2,8 @@ import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { AppShell } from "@/components/os/AppShell";
 import { PageHeader, Panel, SimulationBadge, Tag } from "@/components/os/primitives";
-import { CALENDAR_EVENTS, empColor } from "@/lib/company-data";
+import { useCalendar } from "@/lib/use-calendar";
+import { empColor } from "@/lib/company-data";
 
 export const Route = createFileRoute("/calendar")({
   head: () => ({
@@ -35,7 +36,8 @@ const kindTone = (kind: string) =>
 
 function CalendarPage() {
   const [mode, setMode] = useState<"Month" | "Week" | "Day">("Week");
-  const days = mode === "Day" ? CALENDAR_EVENTS.slice(0, 1) : CALENDAR_EVENTS;
+  const { days: allDays, loading, error } = useCalendar();
+  const days = mode === "Day" ? allDays.slice(0, 1) : allDays;
 
   return (
     <AppShell>
@@ -65,6 +67,11 @@ function CalendarPage() {
           </>
         }
       />
+
+      {error ? <p className="mb-3 text-xs text-destructive">⚠️ {error}</p> : null}
+      {loading && !days.length ? (
+        <p className="mb-3 text-xs text-muted-foreground">カレンダーを読み込んでいます…</p>
+      ) : null}
 
       <div
         className={
