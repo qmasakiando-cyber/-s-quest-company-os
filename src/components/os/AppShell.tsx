@@ -29,8 +29,10 @@ import {
   X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { NOTIFICATIONS, EMPLOYEES, TASKS, WORKFLOWS } from "@/lib/company-data";
+import { NOTIFICATIONS, EMPLOYEES } from "@/lib/company-data";
 import { useAuth } from "@/lib/use-auth";
+import { useTasks } from "@/lib/use-tasks";
+import { useWorkflows } from "@/lib/use-workflows";
 import { SimulationBadge } from "./primitives";
 import {
   Command,
@@ -202,6 +204,8 @@ function CommandPalette({
   setOpen: (v: boolean) => void;
 }) {
   const navigate = useNavigate();
+  const { tasks } = useTasks();
+  const { workflows } = useWorkflows();
   const go = (to: string) => {
     setOpen(false);
     void navigate({ to });
@@ -265,14 +269,14 @@ function CommandPalette({
               ))}
             </CommandGroup>
             <CommandGroup heading="タスク">
-              {TASKS.slice(0, 6).map((t) => (
+              {tasks.slice(0, 6).map((t) => (
                 <CommandItem key={t.id} onSelect={() => go("/tasks")}>
                   {t.id} — {t.title}
                 </CommandItem>
               ))}
             </CommandGroup>
             <CommandGroup heading="ワークフロー">
-              {WORKFLOWS.map((w) => (
+              {workflows.map((w) => (
                 <CommandItem key={w.code} onSelect={() => go("/workflows")}>
                   {w.code} — {w.name}
                 </CommandItem>

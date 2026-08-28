@@ -35,7 +35,7 @@ export const Route = createFileRoute("/api/chat")({
           const systemPrompt = employee
             ? employee.systemPrompt
             : JARVIS_SYSTEM_PROMPT;
-          const system = `${systemPrompt}\n\n${buildCompanyContext()}`;
+          const system = `${systemPrompt}\n\n${await buildCompanyContext()}`;
 
           const geminiKey = process.env["GEMINI_API_KEY"];
           const text = geminiKey

@@ -1,7 +1,15 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppShell } from "@/components/os/AppShell";
-import { PageHeader, Panel, SectionTitle, SimulationBadge, Tag } from "@/components/os/primitives";
-import { ALERTS, CALENDAR_EVENTS, TASKS, empColor } from "@/lib/company-data";
+import {
+  PageHeader,
+  Panel,
+  SectionTitle,
+  SimulationBadge,
+  Tag,
+} from "@/components/os/primitives";
+import { useTasks } from "@/lib/use-tasks";
+import { useCalendar } from "@/lib/use-calendar";
+import { ALERTS, empColor } from "@/lib/company-data";
 
 export const Route = createFileRoute("/profile")({
   head: () => ({
@@ -22,9 +30,13 @@ export const Route = createFileRoute("/profile")({
 });
 
 function ProfilePage() {
-  const todayTasks = TASKS.filter((t) => t.due.startsWith("Today") && t.status !== "DONE");
+  const { tasks } = useTasks();
+  const { days: calendarDays } = useCalendar();
+  const todayTasks = tasks.filter(
+    (t) => t.due.startsWith("Today") && t.status !== "DONE",
+  );
   const approvals = ALERTS.filter((a) => a.level === "APPROVAL");
-  const today = CALENDAR_EVENTS.find((d) => d.day === "TODAY");
+  const today = calendarDays.find((d) => d.day === "TODAY");
   const meetings = (today?.items ?? []).filter((i) => i.kind === "Meeting");
 
   return (
@@ -64,19 +76,28 @@ function ProfilePage() {
               <Panel className="p-4">
                 <p className="label-caps">TASKS</p>
                 <p className="num-display mt-2 text-3xl">{todayTasks.length}</p>
-                <p className="mt-1 text-[11px] text-muted-foreground">本日期限・未完了</p>
+                <p className="mt-1 text-[11px] text-muted-foreground">
+                  本日期限・未完了
+                </p>
               </Panel>
               <Panel className="p-4">
                 <p className="label-caps">APPROVALS</p>
-                <p className="num-display mt-2 text-3xl" style={{ color: "var(--warning)" }}>
+                <p
+                  className="num-display mt-2 text-3xl"
+                  style={{ color: "var(--warning)" }}
+                >
                   {approvals.length}
                 </p>
-                <p className="mt-1 text-[11px] text-muted-foreground">CEO承認待ち</p>
+                <p className="mt-1 text-[11px] text-muted-foreground">
+                  CEO承認待ち
+                </p>
               </Panel>
               <Panel className="p-4">
                 <p className="label-caps">MEETINGS</p>
                 <p className="num-display mt-2 text-3xl">{meetings.length}</p>
-                <p className="mt-1 text-[11px] text-muted-foreground">本日の予定</p>
+                <p className="mt-1 text-[11px] text-muted-foreground">
+                  本日の予定
+                </p>
               </Panel>
             </div>
           </div>
@@ -99,7 +120,9 @@ function ProfilePage() {
                     >
                       {t.assignee}
                     </span>
-                    <span className="min-w-0 flex-1 truncate text-sm">{t.title}</span>
+                    <span className="min-w-0 flex-1 truncate text-sm">
+                      {t.title}
+                    </span>
                     <Tag
                       tone={
                         t.priority === "P0"
@@ -111,12 +134,16 @@ function ProfilePage() {
                     >
                       {t.priority}
                     </Tag>
-                    <span className="text-[11px] text-muted-foreground">{t.due}</span>
+                    <span className="text-[11px] text-muted-foreground">
+                      {t.due}
+                    </span>
                   </li>
                 ))}
               </ul>
             ) : (
-              <p className="text-sm text-muted-foreground">本日期限のタスクはありません。</p>
+              <p className="text-sm text-muted-foreground">
+                本日期限のタスクはありません。
+              </p>
             )}
           </Panel>
 
@@ -125,17 +152,24 @@ function ProfilePage() {
             {approvals.length ? (
               <ul className="space-y-2">
                 {approvals.map((a) => (
-                  <li key={a.title} className="rounded-xl border border-border bg-secondary/30 px-3 py-2.5">
+                  <li
+                    key={a.title}
+                    className="rounded-xl border border-border bg-secondary/30 px-3 py-2.5"
+                  >
                     <div className="flex items-center justify-between gap-2">
                       <span className="text-sm font-semibold">{a.title}</span>
                       <Tag tone="var(--warning)">{a.level}</Tag>
                     </div>
-                    <p className="mt-1 text-xs text-muted-foreground">{a.body}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {a.body}
+                    </p>
                   </li>
                 ))}
               </ul>
             ) : (
-              <p className="text-sm text-muted-foreground">承認待ちの項目はありません。</p>
+              <p className="text-sm text-muted-foreground">
+                承認待ちの項目はありません。
+              </p>
             )}
           </Panel>
 
@@ -144,15 +178,22 @@ function ProfilePage() {
             {meetings.length ? (
               <ul className="space-y-2">
                 {meetings.map((m) => (
-                  <li key={m.time + m.title} className="flex items-center gap-3 text-sm">
-                    <span className="num-display w-12 text-xs text-muted-foreground">{m.time}</span>
+                  <li
+                    key={m.time + m.title}
+                    className="flex items-center gap-3 text-sm"
+                  >
+                    <span className="num-display w-12 text-xs text-muted-foreground">
+                      {m.time}
+                    </span>
                     <span className="flex-1 truncate">{m.title}</span>
                     <Tag tone={empColor(m.who)}>{m.who}</Tag>
                   </li>
                 ))}
               </ul>
             ) : (
-              <p className="text-sm text-muted-foreground">本日のミーティングはありません。</p>
+              <p className="text-sm text-muted-foreground">
+                本日のミーティングはありません。
+              </p>
             )}
           </Panel>
         </div>

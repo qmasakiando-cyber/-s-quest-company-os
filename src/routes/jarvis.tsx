@@ -17,14 +17,15 @@ import {
   Tag,
   Meter,
 } from "@/components/os/primitives";
+import { useTasks } from "@/lib/use-tasks";
+import { useKpis } from "@/lib/use-kpis";
+import { useEmployeeLiveStates } from "@/lib/use-employee-live-states";
 import {
   ACTIVITY,
   EMPLOYEES,
   JARVIS_EXAMPLES,
-  KPIS,
   QUICK_ACTIONS,
   REVENUE,
-  TASKS,
   empColor,
   jpy,
 } from "@/lib/company-data";
@@ -39,10 +40,14 @@ export const Route = createFileRoute("/jarvis")({
         content:
           "JARVISがCEOの指示を分解し、AI社員A〜Fへ仕事を配分するオーケストレーション画面。",
       },
-      { property: "og:title", content: "JARVIS Command Center — S-QUEST COMPANY" },
+      {
+        property: "og:title",
+        content: "JARVIS Command Center — S-QUEST COMPANY",
+      },
       {
         property: "og:description",
-        content: "指示 → 分解 → 配分 → 統合 → CEO承認。会社を動かすオーケストレーター。",
+        content:
+          "指示 → 分解 → 配分 → 統合 → CEO承認。会社を動かすオーケストレーター。",
       },
     ],
   }),
@@ -81,7 +86,8 @@ interface Message {
  * メッセージは、現在のモードトグルの状態に関わらずそのメッセージだけ相談モード扱いにする。
  */
 const CONSULTATION_PREFIX_RE = /^\s*jarvis\s*[、,]/i;
-const isConsultationTrigger = (text: string) => CONSULTATION_PREFIX_RE.test(text);
+const isConsultationTrigger = (text: string) =>
+  CONSULTATION_PREFIX_RE.test(text);
 
 const planFor = (text: string): Plan[] => {
   const t = text.toLowerCase();
@@ -123,6 +129,9 @@ const planFor = (text: string): Plan[] => {
 function JarvisPage() {
   const { q } = Route.useSearch();
   const ask = useServerFn(askJarvis);
+  const { tasks } = useTasks();
+  const { kpis } = useKpis();
+  const { states: liveStates } = useEmployeeLiveStates();
   const [messages, setMessages] = useState<Message[]>([
     {
       id: 1,
@@ -135,8 +144,12 @@ function JarvisPage() {
   const [mode, setMode] = useState<JarvisMode>("instruction");
   const nextId = useRef(2);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const historyRef = useRef<{ role: "user" | "assistant"; content: string }[]>([]);
-  const submitRef = useRef<(text: string, modeOverride?: JarvisMode) => void>(() => {});
+  const historyRef = useRef<{ role: "user" | "assistant"; content: string }[]>(
+    [],
+  );
+  const submitRef = useRef<(text: string, modeOverride?: JarvisMode) => void>(
+    () => {},
+  );
   const voiceOut = useVoiceOutput();
   const voiceIn = useVoiceInput((text) => submitRef.current(text));
 
@@ -171,26 +184,38 @@ function JarvisPage() {
                 approval: "重要事項は CEO 承認が必要",
                 risk: "MEDIUM",
                 osUpdates: "COMPANY OS 更新候補として保留",
-                nextAction: "実行を押すと JARVIS が各社員へ配分します（シミュレーション）",
+                nextAction:
+                  "実行を押すと JARVIS が各社員へ配分します（シミュレーション）",
               }
             : undefined,
       },
     ]);
     setInput("");
     setPending(true);
-    historyRef.current = [...historyRef.current, { role: "user", content: value }];
+    historyRef.current = [
+      ...historyRef.current,
+      { role: "user", content: value },
+    ];
 
     void ask({ data: { messages: historyRef.current, mode: effectiveMode } })
       .then(({ reply }: { reply: string }) => {
-        historyRef.current = [...historyRef.current, { role: "assistant", content: reply }];
-        setMessages((m) => m.map((x) => (x.id === jarvisId ? { ...x, text: reply } : x)));
+        historyRef.current = [
+          ...historyRef.current,
+          { role: "assistant", content: reply },
+        ];
+        setMessages((m) =>
+          m.map((x) => (x.id === jarvisId ? { ...x, text: reply } : x)),
+        );
         void voiceOut.speak(reply);
       })
       .catch((err: unknown) => {
-        const msg = err instanceof Error ? err.message : "JARVISとの通信に失敗しました。";
+        const msg =
+          err instanceof Error ? err.message : "JARVISとの通信に失敗しました。";
         setMessages((m) =>
           m.map((x) =>
-            x.id === jarvisId ? { ...x, text: `⚠️ ${msg}`, plan: undefined, error: true } : x,
+            x.id === jarvisId
+              ? { ...x, text: `⚠️ ${msg}`, plan: undefined, error: true }
+              : x,
           ),
         );
       })
@@ -210,10 +235,15 @@ function JarvisPage() {
   }, [q]);
 
   useEffect(() => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
+    scrollRef.current?.scrollTo({
+      top: scrollRef.current.scrollHeight,
+      behavior: "smooth",
+    });
   }, [messages]);
 
-  const working = EMPLOYEES.filter((e) => e.status === "WORKING" || e.status === "REVIEW");
+  const working = EMPLOYEES.filter(
+    (e) => e.status === "WORKING" || e.status === "REVIEW",
+  );
 
   return (
     <AppShell>
@@ -231,7 +261,8 @@ function JarvisPage() {
             <div className="min-w-0">
               <p className="label-caps">現在のオーケストレーション</p>
               <p className="mt-1 text-sm">
-                WF-06 を実行中。A / D / E の一次データを統合し、B が改善戦略を設計しています。
+                WF-06 を実行中。A / D / E の一次データを統合し、B
+                が改善戦略を設計しています。
               </p>
               <div className="mt-3 flex flex-wrap gap-2">
                 {working.map((e) => (
@@ -244,7 +275,10 @@ function JarvisPage() {
           </Panel>
 
           <Panel className="p-0">
-            <div ref={scrollRef} className="max-h-[560px] space-y-5 overflow-y-auto p-5">
+            <div
+              ref={scrollRef}
+              className="max-h-[560px] space-y-5 overflow-y-auto p-5"
+            >
               {messages.map((m) =>
                 m.role === "CEO" ? (
                   <div key={m.id} className="flex justify-end">
@@ -260,10 +294,15 @@ function JarvisPage() {
                         <Tag tone="var(--emp-b)">相談モード</Tag>
                       ) : null}
                       {m.text ? (
-                        <p className="whitespace-pre-wrap text-sm leading-relaxed">{m.text}</p>
+                        <p className="whitespace-pre-wrap text-sm leading-relaxed">
+                          {m.text}
+                        </p>
                       ) : (
                         <p className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <Loader2 className="size-3.5 animate-spin" aria-hidden />
+                          <Loader2
+                            className="size-3.5 animate-spin"
+                            aria-hidden
+                          />
                           JARVIS が思考中です…
                         </p>
                       )}
@@ -281,7 +320,10 @@ function JarvisPage() {
                           <p className="label-caps">アクションプラン</p>
                           <ol className="mt-3 space-y-2">
                             {m.plan.map((p) => (
-                              <li key={p.employee + p.job} className="flex items-center gap-3">
+                              <li
+                                key={p.employee + p.job}
+                                className="flex items-center gap-3"
+                              >
                                 <span
                                   className="grid size-7 place-items-center rounded-lg text-[11px] font-bold"
                                   style={{
@@ -307,7 +349,9 @@ function JarvisPage() {
                               ].map(([k, v]) => (
                                 <div key={k}>
                                   <dt className="label-caps">{k}</dt>
-                                  <dd className="mt-0.5 text-foreground/80">{v}</dd>
+                                  <dd className="mt-0.5 text-foreground/80">
+                                    {v}
+                                  </dd>
                                 </div>
                               ))}
                             </dl>
@@ -372,10 +416,18 @@ function JarvisPage() {
                 />
                 <button
                   type="button"
-                  onClick={() => (voiceIn.recording ? void voiceIn.stop() : void voiceIn.start())}
+                  onClick={() =>
+                    voiceIn.recording
+                      ? void voiceIn.stop()
+                      : void voiceIn.start()
+                  }
                   disabled={pending || voiceIn.transcribing}
-                  aria-label={voiceIn.recording ? "録音を終了して送信" : "音声で指示する"}
-                  title={voiceIn.recording ? "録音を終了して送信" : "音声で指示する"}
+                  aria-label={
+                    voiceIn.recording ? "録音を終了して送信" : "音声で指示する"
+                  }
+                  title={
+                    voiceIn.recording ? "録音を終了して送信" : "音声で指示する"
+                  }
                   className={cn(
                     "grid size-9 place-items-center rounded-lg border transition-colors disabled:opacity-50",
                     voiceIn.recording
@@ -397,7 +449,11 @@ function JarvisPage() {
                     voiceOut.stop();
                     voiceOut.setEnabled(!voiceOut.enabled);
                   }}
-                  aria-label={voiceOut.enabled ? "音声応答をオフにする" : "音声応答をオンにする"}
+                  aria-label={
+                    voiceOut.enabled
+                      ? "音声応答をオフにする"
+                      : "音声応答をオンにする"
+                  }
                   title={voiceOut.enabled ? "音声応答オン" : "音声応答オフ"}
                   className={cn(
                     "grid size-9 place-items-center rounded-lg border transition-colors",
@@ -433,12 +489,16 @@ function JarvisPage() {
                     <span className="h-1 w-16 overflow-hidden rounded-full bg-border">
                       <span
                         className="block h-full bg-destructive transition-[width]"
-                        style={{ width: `${Math.min(100, Math.round(voiceIn.level * 260))}%` }}
+                        style={{
+                          width: `${Math.min(100, Math.round(voiceIn.level * 260))}%`,
+                        }}
                       />
                     </span>
                   </span>
                 ) : voiceIn.transcribing ? (
-                  <span className="text-muted-foreground">音声を文字起こししています…</span>
+                  <span className="text-muted-foreground">
+                    音声を文字起こししています…
+                  </span>
                 ) : voiceOut.speaking ? (
                   <span className="text-primary">JARVIS が音声で応答中…</span>
                 ) : voiceIn.error ? (
@@ -472,9 +532,15 @@ function JarvisPage() {
               {[
                 ["① 昨日の進捗", "A 調査完了 / E 投稿案5件 / C LP公開申請"],
                 ["② 現在の問題", "Leads が前月比 -17.9%（P0）"],
-                ["③ 実施中の仕事", `${EMPLOYEES.filter((e) => e.status === "WORKING").length}名が稼働中・${TASKS.filter((t) => t.status === "IN PROGRESS").length}件進行`],
+                [
+                  "③ 実施中の仕事",
+                  `${EMPLOYEES.filter((e) => (liveStates[e.code]?.status ?? e.status) === "WORKING").length}名が稼働中・${tasks.filter((t) => t.status === "IN PROGRESS").length}件進行`,
+                ],
                 ["④ CEO判断が必要", "新LP公開の最終承認 1件"],
-                ["⑤ 今日のTOP3", "① 売上ギャップ分析 ② 診断結果ページ修正 ③ 法人営業10社"],
+                [
+                  "⑤ 今日のTOP3",
+                  "① 売上ギャップ分析 ② 診断結果ページ修正 ③ 法人営業10社",
+                ],
               ].map(([k, v]) => (
                 <li key={k}>
                   <p className="label-caps">{k}</p>
@@ -491,9 +557,15 @@ function JarvisPage() {
                 <dt className="text-muted-foreground">Monthly Revenue</dt>
                 <dd className="num-display">{jpy(REVENUE.monthly)}</dd>
               </div>
-              <Meter value={Math.round((REVENUE.monthly / REVENUE.goal) * 100)} label="Goal" />
-              {KPIS.slice(3, 8).map((k) => (
-                <div key={k.name} className="flex items-center justify-between gap-3">
+              <Meter
+                value={Math.round((REVENUE.monthly / REVENUE.goal) * 100)}
+                label="Goal"
+              />
+              {kpis.slice(3, 8).map((k) => (
+                <div
+                  key={k.name}
+                  className="flex items-center justify-between gap-3"
+                >
                   <dt className="truncate text-muted-foreground">{k.name}</dt>
                   <dd className="num-display">{k.value}</dd>
                 </div>
@@ -501,7 +573,7 @@ function JarvisPage() {
               <div className="flex items-center justify-between">
                 <dt className="text-muted-foreground">タスクを開く</dt>
                 <dd className="num-display">
-                  {TASKS.filter((t) => t.status !== "DONE").length}
+                  {tasks.filter((t) => t.status !== "DONE").length}
                 </dd>
               </div>
             </dl>
@@ -512,9 +584,13 @@ function JarvisPage() {
             <ol className="space-y-3 text-xs">
               {ACTIVITY.slice(0, 6).map((a) => (
                 <li key={a.at + a.text} className="flex gap-2">
-                  <span className="num-display text-muted-foreground">{a.at}</span>
+                  <span className="num-display text-muted-foreground">
+                    {a.at}
+                  </span>
                   <Tag tone={empColor(a.actor)}>{a.actor}</Tag>
-                  <span className="min-w-0 flex-1 text-foreground/80">{a.text}</span>
+                  <span className="min-w-0 flex-1 text-foreground/80">
+                    {a.text}
+                  </span>
                 </li>
               ))}
             </ol>

@@ -10,7 +10,7 @@
  * ブロックという構成にすることで、アイデンティティ部分が2箇所で食い違う
  * リスクを避けている。
  */
-import { EMPLOYEES, KPIS, REVENUE, TASKS, WORKFLOWS, jpy } from "./company-data";
+import { EMPLOYEES, NO_CURRENT_TASK_LABEL, REVENUE, jpy } from "./company-data";
 
 export type JarvisMode = "instruction" | "consultation";
 
@@ -213,26 +213,53 @@ export const JARVIS_CONSULTATION_MODE_PROMPT = `## 現在のモード：相談�
 
 export function buildJarvisSystemPrompt(mode: JarvisMode): string {
   const modeBlock =
-    mode === "consultation" ? JARVIS_CONSULTATION_MODE_PROMPT : JARVIS_INSTRUCTION_MODE_PROMPT;
+    mode === "consultation"
+      ? JARVIS_CONSULTATION_MODE_PROMPT
+      : JARVIS_INSTRUCTION_MODE_PROMPT;
   return `${JARVIS_BASE_PROMPT}\n\n---\n\n${modeBlock}`;
 }
 
 /** 後方互換：/api/chat の個別AI社員チャットのフォールバック等、モード概念のない箇所向け。 */
 export const JARVIS_SYSTEM_PROMPT = buildJarvisSystemPrompt("instruction");
 
-export function buildCompanyContext(): string {
-  const emp = EMPLOYEES.map(
-    (e) => `${e.code}｜${e.name}（${e.department}）状態:${e.status} 本日完了:${e.completedToday}件 現在:${e.currentTask}`,
-  ).join("\n");
-  const kpi = KPIS.slice(0, 8).map((k) => `${k.name}: ${k.value}`).join(" / ");
-  const openTasks = TASKS.filter((t) => t.status !== "DONE")
-    .slice(0, 10)
-    .map((t) => `${t.id} ${t.title}（担当${t.assignee} / ${t.priority} / ${t.status}）`)
-    .join("\n");
-  const wf = WORKFLOWS.map((w) => `${w.code} ${w.name}`).join(" / ");
+/**
+ * CEO・AI社員に渡す「今の会社の状況」スナップショット。AI社員・KPI・タスク・
+ * ワークフローはSupabaseの実データから組み立てる（売上のみ、/revenue自体が
+ * まだSupabase化されていないためモック値のまま — その旨を本文にも明記する）。
+ */
+export async function buildCompanyContext(): Promise<string> {
+  const [liveStates, kpis, tasks, workflows] = await Promise.all([
+    (async () =>
+      (await import("./employees.server")).listEmployeeLiveStates())(),
+    (async () => (await import("./kpi.server")).listKpis())(),
+    (async () => (await import("./tasks.server")).listTasks())(),
+    (async () => (await import("./workflows.server")).listWorkflows())(),
+  ]);
 
-  return `# 現在のCOMPANY OSスナップショット（SIMULATION DATA）
-月次売上: ${jpy(REVENUE.monthly)}（目標 ${jpy(REVENUE.goal)}）
+  const liveByCode = new Map(liveStates.map((s) => [s.code, s]));
+  const emp = EMPLOYEES.map((e) => {
+    const live = liveByCode.get(e.code);
+    const status = live?.status ?? e.status;
+    const completedToday = live?.completedToday ?? e.completedToday;
+    const currentTask = live?.currentTask ?? NO_CURRENT_TASK_LABEL;
+    return `${e.code}｜${e.name}（${e.department}）状態:${status} 本日完了:${completedToday}件 現在:${currentTask}`;
+  }).join("\n");
+  const kpi = kpis
+    .slice(0, 8)
+    .map((k) => `${k.name}: ${k.value}`)
+    .join(" / ");
+  const openTasks = tasks
+    .filter((t) => t.status !== "DONE")
+    .slice(0, 10)
+    .map(
+      (t) =>
+        `${t.id} ${t.title}（担当${t.assignee} / ${t.priority} / ${t.status}）`,
+    )
+    .join("\n");
+  const wf = workflows.map((w) => `${w.code} ${w.name}`).join(" / ");
+
+  return `# 現在のCOMPANY OSスナップショット（AI社員・KPI・タスク・ワークフローは実データ）
+月次売上: ${jpy(REVENUE.monthly)}（目標 ${jpy(REVENUE.goal)}） ※売上はまだSupabase化されていないためモック値
 
 ## AI社員
 ${emp}
