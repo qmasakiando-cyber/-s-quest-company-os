@@ -58,9 +58,13 @@ create table if not exists ai_employees (
   department        text not null,                  -- 例: "Research / Intelligence"
   role              text not null,
   status            text not null default 'IDLE'
+                      -- Obsidian「A〜F 状態管理 SYSTEM v1.0」の8状態（IDLE/READY/WORKING/
+                      -- WAITING/REVIEW/BLOCKED/ERROR/DONE）+ 既存の THINKING/APPROVAL_REQUIRED/
+                      -- COMPLETED を後方互換のため残した11状態。
                       check (status in (
                         'IDLE', 'THINKING', 'WORKING', 'WAITING',
-                        'REVIEW', 'APPROVAL_REQUIRED', 'COMPLETED', 'ERROR'
+                        'REVIEW', 'APPROVAL_REQUIRED', 'COMPLETED', 'ERROR',
+                        'READY', 'BLOCKED', 'DONE'
                       )),
   current_task      text,
   progress          smallint not null default 0
@@ -79,6 +83,7 @@ create table if not exists ai_employees (
   qa_pass_rate      numeric(5, 2),
   permissions_read  jsonb not null default '[]'::jsonb,
   permissions_write jsonb not null default '[]'::jsonb,
+  started_at        timestamptz,                    -- 現在のタスク/状態がいつ始まったか
   last_activity_at  timestamptz,
   created_at        timestamptz not null default now(),
   updated_at        timestamptz not null default now()

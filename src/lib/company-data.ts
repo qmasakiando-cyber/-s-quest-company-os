@@ -11,7 +11,12 @@ export type EmployeeStatus =
   | "REVIEW"
   | "APPROVAL_REQUIRED"
   | "COMPLETED"
-  | "ERROR";
+  | "ERROR"
+  // Obsidian「A〜F 状態管理 SYSTEM v1.0」の8状態に合わせて追加。
+  // 既存の THINKING / APPROVAL_REQUIRED / COMPLETED は後方互換のため残す。
+  | "READY"
+  | "BLOCKED"
+  | "DONE";
 
 export const STATUS_LABEL: Record<EmployeeStatus, string> = {
   IDLE: "待機中",
@@ -22,6 +27,9 @@ export const STATUS_LABEL: Record<EmployeeStatus, string> = {
   APPROVAL_REQUIRED: "CEO承認待ち",
   COMPLETED: "完了",
   ERROR: "エラー",
+  READY: "実行準備完了",
+  BLOCKED: "停止中",
+  DONE: "タスク完了",
 };
 
 export type EmployeeCode = "A" | "B" | "C" | "D" | "E" | "F";

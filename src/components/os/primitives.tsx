@@ -68,6 +68,9 @@ const STATUS_TONE: Record<EmployeeStatus, string> = {
   APPROVAL_REQUIRED: "var(--warning)",
   COMPLETED: "var(--success)",
   ERROR: "var(--destructive)",
+  READY: "var(--info)",
+  BLOCKED: "var(--destructive)",
+  DONE: "var(--success)",
 };
 
 export function StatusPill({
