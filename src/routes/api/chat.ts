@@ -10,6 +10,7 @@ export const Route = createFileRoute("/api/chat")({
   server: {
     handlers: {
       POST: async ({ request }) => {
+        let employeeCode: string | null = null;
         try {
           const body = (await request.json()) as ChatBody;
           const userMessage = (body.userMessage ?? "").trim();
@@ -25,6 +26,7 @@ export const Route = createFileRoute("/api/chat")({
 
           const code = (body.employeeCode ?? "").toUpperCase();
           const employee = AI_EMPLOYEES[code as keyof typeof AI_EMPLOYEES];
+          if (employee) employeeCode = code;
           const systemPrompt = employee ? employee.systemPrompt : JARVIS_SYSTEM_PROMPT;
           const system = `${systemPrompt}\n\n${buildCompanyContext()}`;
 
@@ -37,6 +39,16 @@ export const Route = createFileRoute("/api/chat")({
         } catch (error) {
           const message =
             error instanceof Error ? error.message : "サーバー内部エラーが発生しました。";
+          if (employeeCode) {
+            // 個別AI社員へのチャットが失敗 → ERROR状態にしてerror_countを+1する。
+            // このイベント駆動更新自体の失敗で、本来のエラー応答を握りつぶさないようにする。
+            try {
+              const { onEmployeeChatError } = await import("@/lib/employees.server");
+              await onEmployeeChatError(employeeCode as "A" | "B" | "C" | "D" | "E" | "F");
+            } catch (syncError) {
+              console.error("employee status sync (chat error) failed:", syncError);
+            }
+          }
           return Response.json({ error: message }, { status: 500 });
         }
       },

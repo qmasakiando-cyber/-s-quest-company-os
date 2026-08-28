@@ -100,7 +100,17 @@ export async function createTask(input: {
       .insert({ id, ...baseRow })
       .select()
       .single();
-    if (!error) return rowToTask(data as TaskRow);
+    if (!error) {
+      const task = rowToTask(data as TaskRow);
+      // AI社員の状態を連動更新する。失敗してもタスク作成自体は成功として返す。
+      try {
+        const { onTaskCreated } = await import("./employees.server");
+        await onTaskCreated(input.assignee);
+      } catch (syncError) {
+        console.error("employee status sync (task created) failed:", syncError);
+      }
+      return task;
+    }
     if (error.code !== "23505") throw new Error(`タスクの作成に失敗しました: ${error.message}`);
   }
   throw new Error("タスクの作成に失敗しました: IDの採番に失敗しました。");
@@ -108,6 +118,29 @@ export async function createTask(input: {
 
 export async function setTaskStatus(input: { id: string; status: TaskStatus }): Promise<void> {
   const supabase = getSupabaseServerClient();
-  const { error } = await supabase.from("tasks").update({ status: input.status }).eq("id", input.id);
+  const { data, error } = await supabase
+    .from("tasks")
+    .update({ status: input.status })
+    .eq("id", input.id)
+    .select("id, title, assignee")
+    .single();
   if (error) throw new Error(`タスクの更新に失敗しました: ${error.message}`);
+
+  const task = data as { id: string; title: string; assignee: EmployeeCode | "JARVIS" | "CEO" };
+  if (task.assignee === "JARVIS" || task.assignee === "CEO") return;
+
+  // AI社員の状態を連動更新する。失敗してもタスク更新自体は成功として返す。
+  try {
+    const { onTaskCompleted, onTaskResumed, resolveWaitingEmployees } = await import(
+      "./employees.server"
+    );
+    if (input.status === "DONE") {
+      await onTaskCompleted(task.assignee);
+      await resolveWaitingEmployees(task.id);
+    } else {
+      await onTaskResumed(task.assignee, task.title);
+    }
+  } catch (syncError) {
+    console.error("employee status sync (task status changed) failed:", syncError);
+  }
 }

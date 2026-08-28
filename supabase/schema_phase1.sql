@@ -84,6 +84,12 @@ create table if not exists ai_employees (
   permissions_read  jsonb not null default '[]'::jsonb,
   permissions_write jsonb not null default '[]'::jsonb,
   started_at        timestamptz,                    -- 現在のタスク/状態がいつ始まったか
+  -- Migration 005 (supabase/migration_005_ai_employees_event_fields.sql):
+  waiting_for       text                            -- 誰の成果物待ちか（A-F/JARVIS/CEO）
+                      check (waiting_for is null or waiting_for in ('A', 'B', 'C', 'D', 'E', 'F', 'JARVIS', 'CEO')),
+  blocked_reason    text,                           -- 停止理由（未使用・将来のBLOCKED対応用）
+  error_count       integer not null default 0 check (error_count >= 0),
+  retry_count       integer not null default 0 check (retry_count >= 0), -- 未使用・将来用
   last_activity_at  timestamptz,
   created_at        timestamptz not null default now(),
   updated_at        timestamptz not null default now()
