@@ -741,6 +741,25 @@ export function summarizeExpensesByCategory(
   return [...totals.entries()].sort(([, a], [, b]) => b - a).map(([category, total]) => ({ category, total }));
 }
 
+export const OUTPUT_TYPES = [
+  "レポート",
+  "企画書",
+  "施策案",
+  "デザイン案",
+  "その他",
+] as const;
+
+export interface AiOutput {
+  id: string;
+  employeeCode: EmployeeCode;
+  taskId: string | null;
+  outputType: string;
+  title: string;
+  content: string | null;
+  externalUrl: string | null;
+  createdAt: string;
+}
+
 export const CALENDAR_EVENTS = [
   { day: "TODAY", date: "Aug 26", items: [{ time: "10:00", title: "CEO Review", kind: "Meeting", who: "CEO" }, { time: "13:00", title: "Marketing Meeting", kind: "Meeting", who: "E" }, { time: "16:00", title: "Product Review", kind: "Review", who: "C" }, { time: "22:00", title: "WF-06 KPI → Strategy", kind: "Workflow", who: "JARVIS" }] },
   { day: "THU", date: "Aug 27", items: [{ time: "09:30", title: "Daily Company Report", kind: "Report", who: "JARVIS" }, { time: "11:00", title: "LP 公開判断", kind: "Approval", who: "CEO" }, { time: "15:00", title: "SNS 投稿バッチ", kind: "Deadline", who: "E" }] },

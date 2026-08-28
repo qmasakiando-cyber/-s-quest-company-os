@@ -16,6 +16,7 @@ import {
   LayoutGrid,
   Menu,
   Network,
+  PackageOpen,
   Receipt,
   Search,
   Settings,
@@ -54,6 +55,7 @@ const NAV = [
   { to: "/kpi", label: "KPI", icon: Gauge },
   { to: "/revenue", label: "売上", icon: Wallet },
   { to: "/expenses", label: "経費管理", icon: Receipt },
+  { to: "/outputs", label: "成果物管理", icon: PackageOpen },
   { to: "/projects", label: "プロジェクト", icon: Activity },
   { to: "/reports", label: "レポート", icon: FileText },
   { to: "/audit", label: "監査ログ", icon: ShieldCheck },
@@ -190,6 +192,7 @@ function CommandPalette({
               <CommandItem onSelect={() => go("/kpi")}>KPIを開く</CommandItem>
               <CommandItem onSelect={() => go("/revenue")}>売上を開く</CommandItem>
               <CommandItem onSelect={() => go("/expenses")}>経費管理を開く</CommandItem>
+              <CommandItem onSelect={() => go("/outputs")}>成果物管理を開く</CommandItem>
               <CommandItem onSelect={() => go("/workflows")}>ワークフローを実行</CommandItem>
               <CommandItem onSelect={() => go("/company-os")}>Search Company OS</CommandItem>
               <CommandItem onSelect={() => go("/company-map")}>組織図を開く</CommandItem>

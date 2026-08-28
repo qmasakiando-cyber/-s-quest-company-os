@@ -20,6 +20,7 @@ import { Route as ErrorsRouteImport } from './routes/errors'
 import { Route as ExpensesRouteImport } from './routes/expenses'
 import { Route as JarvisRouteImport } from './routes/jarvis'
 import { Route as KpiRouteImport } from './routes/kpi'
+import { Route as OutputsRouteImport } from './routes/outputs'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as ProjectsRouteImport } from './routes/projects'
 import { Route as ReportsRouteImport } from './routes/reports'
@@ -86,6 +87,11 @@ const JarvisRoute = JarvisRouteImport.update({
 const KpiRoute = KpiRouteImport.update({
   id: '/kpi',
   path: '/kpi',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OutputsRoute = OutputsRouteImport.update({
+  id: '/outputs',
+  path: '/outputs',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProfileRoute = ProfileRouteImport.update({
@@ -161,6 +167,7 @@ export interface FileRoutesByFullPath {
   '/expenses': typeof ExpensesRoute
   '/jarvis': typeof JarvisRoute
   '/kpi': typeof KpiRoute
+  '/outputs': typeof OutputsRoute
   '/profile': typeof ProfileRoute
   '/projects': typeof ProjectsRoute
   '/reports': typeof ReportsRoute
@@ -186,6 +193,7 @@ export interface FileRoutesByTo {
   '/expenses': typeof ExpensesRoute
   '/jarvis': typeof JarvisRoute
   '/kpi': typeof KpiRoute
+  '/outputs': typeof OutputsRoute
   '/profile': typeof ProfileRoute
   '/projects': typeof ProjectsRoute
   '/reports': typeof ReportsRoute
@@ -212,6 +220,7 @@ export interface FileRoutesById {
   '/expenses': typeof ExpensesRoute
   '/jarvis': typeof JarvisRoute
   '/kpi': typeof KpiRoute
+  '/outputs': typeof OutputsRoute
   '/profile': typeof ProfileRoute
   '/projects': typeof ProjectsRoute
   '/reports': typeof ReportsRoute
@@ -239,6 +248,7 @@ export interface FileRouteTypes {
     | '/expenses'
     | '/jarvis'
     | '/kpi'
+    | '/outputs'
     | '/profile'
     | '/projects'
     | '/reports'
@@ -264,6 +274,7 @@ export interface FileRouteTypes {
     | '/expenses'
     | '/jarvis'
     | '/kpi'
+    | '/outputs'
     | '/profile'
     | '/projects'
     | '/reports'
@@ -289,6 +300,7 @@ export interface FileRouteTypes {
     | '/expenses'
     | '/jarvis'
     | '/kpi'
+    | '/outputs'
     | '/profile'
     | '/projects'
     | '/reports'
@@ -315,6 +327,7 @@ export interface RootRouteChildren {
   ExpensesRoute: typeof ExpensesRoute
   JarvisRoute: typeof JarvisRoute
   KpiRoute: typeof KpiRoute
+  OutputsRoute: typeof OutputsRoute
   ProfileRoute: typeof ProfileRoute
   ProjectsRoute: typeof ProjectsRoute
   ReportsRoute: typeof ReportsRoute
@@ -406,6 +419,13 @@ declare module '@tanstack/react-router' {
       path: '/kpi'
       fullPath: '/kpi'
       preLoaderRoute: typeof KpiRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/outputs': {
+      id: '/outputs'
+      path: '/outputs'
+      fullPath: '/outputs'
+      preLoaderRoute: typeof OutputsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/profile': {
@@ -507,6 +527,7 @@ const rootRouteChildren: RootRouteChildren = {
   ExpensesRoute: ExpensesRoute,
   JarvisRoute: JarvisRoute,
   KpiRoute: KpiRoute,
+  OutputsRoute: OutputsRoute,
   ProfileRoute: ProfileRoute,
   ProjectsRoute: ProjectsRoute,
   ReportsRoute: ReportsRoute,
