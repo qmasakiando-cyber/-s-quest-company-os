@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { requireCeoAuthMiddleware } from "./auth.functions";
 
 const schema = z.object({
   messages: z
@@ -15,6 +16,7 @@ const schema = z.object({
 });
 
 export const askJarvis = createServerFn({ method: "POST" })
+  .middleware([requireCeoAuthMiddleware])
   .inputValidator((data: unknown) => schema.parse(data))
   .handler(async ({ data }) => {
     const { callJarvis } = await import("./jarvis.server");

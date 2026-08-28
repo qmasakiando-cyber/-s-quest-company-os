@@ -10,6 +10,7 @@ import {
   ClipboardList,
   Command as CommandIcon,
   FileText,
+  LogOut,
   Gauge,
   Gavel,
   Home,
@@ -29,6 +30,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { NOTIFICATIONS, EMPLOYEES, TASKS, WORKFLOWS } from "@/lib/company-data";
+import { useAuth } from "@/lib/use-auth";
 import { SimulationBadge } from "./primitives";
 import {
   Command,
@@ -63,9 +65,15 @@ const NAV = [
   { to: "/settings", label: "設定", icon: Settings },
 ] as const;
 
-
 function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const navigate = useNavigate();
+  const { email, signOut } = useAuth();
+
+  const handleSignOut = async () => {
+    await signOut();
+    await navigate({ to: "/login" });
+  };
 
   return (
     <div className="flex h-full flex-col">
@@ -76,9 +84,13 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
         </Link>
       </div>
 
-      <nav className="flex-1 space-y-0.5 overflow-y-auto px-3 pb-4" aria-label="Global">
+      <nav
+        className="flex-1 space-y-0.5 overflow-y-auto px-3 pb-4"
+        aria-label="Global"
+      >
         {NAV.map(({ to, label, icon: Icon }) => {
-          const active = to === "/" ? pathname === "/" : pathname.startsWith(to);
+          const active =
+            to === "/" ? pathname === "/" : pathname.startsWith(to);
           return (
             <Link
               key={to}
@@ -94,7 +106,10 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
               <Icon className="size-4 shrink-0" aria-hidden />
               <span>{label}</span>
               {active ? (
-                <span className="ml-auto size-1.5 rounded-full bg-primary" aria-hidden />
+                <span
+                  className="ml-auto size-1.5 rounded-full bg-primary"
+                  aria-hidden
+                />
               ) : null}
             </Link>
           );
@@ -114,10 +129,22 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
           <div className="grid size-8 place-items-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
             M
           </div>
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <p className="truncate text-xs font-semibold">安藤正騎</p>
-            <p className="text-[11px] text-muted-foreground">CEO ・ 全権限</p>
+            <p className="truncate text-[11px] text-muted-foreground">
+              {email ?? "CEO ・ 全権限"}
+            </p>
           </div>
+          {email ? (
+            <button
+              onClick={() => void handleSignOut()}
+              aria-label="ログアウト"
+              title="ログアウト"
+              className="grid size-7 shrink-0 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+            >
+              <LogOut className="size-3.5" aria-hidden />
+            </button>
+          ) : null}
         </div>
       </div>
     </div>
@@ -153,7 +180,9 @@ function NotificationPanel() {
               >
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-xs font-semibold">{n.title}</span>
-                  <span className="text-[10px] text-muted-foreground">{n.at}</span>
+                  <span className="text-[10px] text-muted-foreground">
+                    {n.at}
+                  </span>
                 </div>
                 <p className="mt-0.5 text-xs text-muted-foreground">{n.body}</p>
               </li>
@@ -187,23 +216,50 @@ function CommandPalette({
           <CommandList>
             <CommandEmpty>該当する項目がありません。</CommandEmpty>
             <CommandGroup heading="コマンド">
-              <CommandItem onSelect={() => go("/jarvis")}>JARVISへ指示</CommandItem>
-              <CommandItem onSelect={() => go("/tasks")}>タスクを作成</CommandItem>
+              <CommandItem onSelect={() => go("/jarvis")}>
+                JARVISへ指示
+              </CommandItem>
+              <CommandItem onSelect={() => go("/tasks")}>
+                タスクを作成
+              </CommandItem>
               <CommandItem onSelect={() => go("/kpi")}>KPIを開く</CommandItem>
-              <CommandItem onSelect={() => go("/revenue")}>売上を開く</CommandItem>
-              <CommandItem onSelect={() => go("/expenses")}>経費管理を開く</CommandItem>
-              <CommandItem onSelect={() => go("/outputs")}>成果物管理を開く</CommandItem>
-              <CommandItem onSelect={() => go("/workflows")}>ワークフローを実行</CommandItem>
-              <CommandItem onSelect={() => go("/company-os")}>Search Company OS</CommandItem>
-              <CommandItem onSelect={() => go("/company-map")}>組織図を開く</CommandItem>
-              <CommandItem onSelect={() => go("/approvals")}>承認センターを開く</CommandItem>
-              <CommandItem onSelect={() => go("/decisions")}>CEO Decision Center を開く</CommandItem>
-              <CommandItem onSelect={() => go("/errors")}>エラーセンターを開く</CommandItem>
-              <CommandItem onSelect={() => go("/profile")}>CEO プロフィールを開く</CommandItem>
+              <CommandItem onSelect={() => go("/revenue")}>
+                売上を開く
+              </CommandItem>
+              <CommandItem onSelect={() => go("/expenses")}>
+                経費管理を開く
+              </CommandItem>
+              <CommandItem onSelect={() => go("/outputs")}>
+                成果物管理を開く
+              </CommandItem>
+              <CommandItem onSelect={() => go("/workflows")}>
+                ワークフローを実行
+              </CommandItem>
+              <CommandItem onSelect={() => go("/company-os")}>
+                Search Company OS
+              </CommandItem>
+              <CommandItem onSelect={() => go("/company-map")}>
+                組織図を開く
+              </CommandItem>
+              <CommandItem onSelect={() => go("/approvals")}>
+                承認センターを開く
+              </CommandItem>
+              <CommandItem onSelect={() => go("/decisions")}>
+                CEO Decision Center を開く
+              </CommandItem>
+              <CommandItem onSelect={() => go("/errors")}>
+                エラーセンターを開く
+              </CommandItem>
+              <CommandItem onSelect={() => go("/profile")}>
+                CEO プロフィールを開く
+              </CommandItem>
             </CommandGroup>
             <CommandGroup heading="AI社員">
               {EMPLOYEES.map((e) => (
-                <CommandItem key={e.code} onSelect={() => go(`/employees/${e.code}`)}>
+                <CommandItem
+                  key={e.code}
+                  onSelect={() => go(`/employees/${e.code}`)}
+                >
                   {e.code}｜{e.name} — {e.department}
                 </CommandItem>
               ))}
@@ -284,7 +340,9 @@ export function AppShell({ children }: { children: ReactNode }) {
             className="flex h-9 flex-1 items-center gap-2 rounded-lg border border-border bg-secondary/40 px-3 text-left text-xs text-muted-foreground transition-colors hover:bg-accent sm:max-w-md"
           >
             <Search className="size-4" aria-hidden />
-            <span className="flex-1 truncate">タスク・AI社員・KPI・会社データを検索…</span>
+            <span className="flex-1 truncate">
+              タスク・AI社員・KPI・会社データを検索…
+            </span>
             <kbd className="hidden items-center gap-1 rounded border border-border px-1.5 py-0.5 text-[10px] sm:flex">
               <CommandIcon className="size-3" aria-hidden />K
             </kbd>
@@ -316,7 +374,9 @@ export function AppShell({ children }: { children: ReactNode }) {
             <span className="size-1.5 animate-pulse rounded-full bg-primary" />
             JARVIS 稼働中 — WF-06 KPI → 戦略
           </span>
-          <span className="hidden sm:inline">本日の完了：A 6件 · B 4件 · C 5件 · D 3件 · E 7件 · F 9件</span>
+          <span className="hidden sm:inline">
+            本日の完了：A 6件 · B 4件 · C 5件 · D 3件 · E 7件 · F 9件
+          </span>
           <span>承認待ち 1件</span>
         </div>
       </div>

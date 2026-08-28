@@ -1,12 +1,13 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { requireCeoAuthMiddleware } from "./auth.functions";
 
-export const listAiOutputsFn = createServerFn({ method: "GET" }).handler(
-  async () => {
+export const listAiOutputsFn = createServerFn({ method: "GET" })
+  .middleware([requireCeoAuthMiddleware])
+  .handler(async () => {
     const { listAiOutputs } = await import("./ai-outputs.server");
     return listAiOutputs();
-  },
-);
+  });
 
 const createAiOutputSchema = z.object({
   employeeCode: z.enum(["A", "B", "C", "D", "E", "F"]),
@@ -18,6 +19,7 @@ const createAiOutputSchema = z.object({
 });
 
 export const createAiOutputFn = createServerFn({ method: "POST" })
+  .middleware([requireCeoAuthMiddleware])
   .inputValidator((data: unknown) => createAiOutputSchema.parse(data))
   .handler(async ({ data }) => {
     const { createAiOutput } = await import("./ai-outputs.server");
