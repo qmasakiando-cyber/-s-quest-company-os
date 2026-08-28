@@ -18,6 +18,14 @@ const CAPTION: Record<CoreState, string> = {
   ERROR: "ATTENTION REQUIRED",
 };
 
+/**
+ * Math.cos / Math.sin はECMAScript仕様上「実装依存の近似値」でよいとされており、
+ * SSR（Node）とクライアント（ブラウザ）のV8で末尾ビットが異なることがある。
+ * SVG属性にそのまま埋め込むとReactのhydration mismatchを起こすため、
+ * 座標は必ず小数点2桁に丸めてから使う。
+ */
+const round = (n: number) => Math.round(n * 100) / 100;
+
 /** ゲージの目盛り（60本、5本ごとに主目盛り）を生成する */
 function ticks(cx: number, cy: number, r1: number, r2: number) {
   const out: { x1: number; y1: number; x2: number; y2: number; major: boolean }[] = [];
@@ -27,10 +35,10 @@ function ticks(cx: number, cy: number, r1: number, r2: number) {
     const major = i % 5 === 0;
     const ra = major ? r1 - 4 : r1;
     out.push({
-      x1: cx + ra * Math.cos(rad),
-      y1: cy + ra * Math.sin(rad),
-      x2: cx + r2 * Math.cos(rad),
-      y2: cy + r2 * Math.sin(rad),
+      x1: round(cx + ra * Math.cos(rad)),
+      y1: round(cy + ra * Math.sin(rad)),
+      x2: round(cx + r2 * Math.cos(rad)),
+      y2: round(cy + r2 * Math.sin(rad)),
       major,
     });
   }
@@ -144,8 +152,8 @@ export function JarvisCore({
         {(["A", "B", "C", "D", "E", "F"] as const).map((code, i) => {
           const deg = i * 60;
           const rad = ((deg - 90) * Math.PI) / 180;
-          const x = cx + 72 * Math.cos(rad);
-          const y = cy + 72 * Math.sin(rad);
+          const x = round(cx + 72 * Math.cos(rad));
+          const y = round(cy + 72 * Math.sin(rad));
           return (
             <text
               key={code}
