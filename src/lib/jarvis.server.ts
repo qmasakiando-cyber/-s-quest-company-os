@@ -1,13 +1,16 @@
-import { JARVIS_SYSTEM_PROMPT, buildCompanyContext } from "./jarvis-prompt";
+import { buildCompanyContext, buildJarvisSystemPrompt, type JarvisMode } from "./jarvis-prompt";
 
 export interface ChatTurn {
   role: "user" | "assistant";
   content: string;
 }
 
-export async function callJarvis(history: ChatTurn[]): Promise<string> {
+export async function callJarvis(
+  history: ChatTurn[],
+  mode: JarvisMode = "instruction",
+): Promise<string> {
   const geminiKey = process.env["GEMINI_API_KEY"];
-  if (geminiKey) return callGemini(geminiKey, history);
+  if (geminiKey) return callGemini(geminiKey, history, mode);
 
   const apiKey = process.env["LOVABLE_API_KEY"];
   if (!apiKey) throw new Error("AIキーが設定されていません。");
@@ -23,7 +26,7 @@ export async function callJarvis(history: ChatTurn[]): Promise<string> {
     body: JSON.stringify({
       model: "google/gemini-3.7-flash",
       messages: [
-        { role: "system", content: JARVIS_SYSTEM_PROMPT },
+        { role: "system", content: buildJarvisSystemPrompt(mode) },
         { role: "system", content: buildCompanyContext() },
         ...history.slice(-16),
       ],
@@ -44,12 +47,14 @@ export async function callJarvis(history: ChatTurn[]): Promise<string> {
   return data.choices?.[0]?.message?.content?.trim() || "（応答を生成できませんでした）";
 }
 
-async function callGemini(apiKey: string, history: ChatTurn[]): Promise<string> {
+async function callGemini(apiKey: string, history: ChatTurn[], mode: JarvisMode): Promise<string> {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.7-flash:generateContent?key=${apiKey}`;
   const contents = [
     {
       role: "user",
-      parts: [{ text: `【システム指示】\n${JARVIS_SYSTEM_PROMPT}\n\n${buildCompanyContext()}` }],
+      parts: [
+        { text: `【システム指示】\n${buildJarvisSystemPrompt(mode)}\n\n${buildCompanyContext()}` },
+      ],
     },
     { role: "model", parts: [{ text: "了解しました、CEO。指示に従います。" }] },
     ...history.slice(-16).map((h) => ({

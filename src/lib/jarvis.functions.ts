@@ -11,12 +11,13 @@ const schema = z.object({
     )
     .min(1)
     .max(40),
+  mode: z.enum(["instruction", "consultation"]).default("instruction"),
 });
 
 export const askJarvis = createServerFn({ method: "POST" })
   .inputValidator((data: unknown) => schema.parse(data))
   .handler(async ({ data }) => {
     const { callJarvis } = await import("./jarvis.server");
-    const reply = await callJarvis(data.messages);
+    const reply = await callJarvis(data.messages, data.mode);
     return { reply };
   });

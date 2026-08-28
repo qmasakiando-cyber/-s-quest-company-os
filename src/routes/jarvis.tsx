@@ -4,6 +4,7 @@ import { Loader2, Mic, Send, Square, Volume2, VolumeX } from "lucide-react";
 import { z } from "zod";
 import { useServerFn } from "@tanstack/react-start";
 import { askJarvis } from "@/lib/jarvis.functions";
+import type { JarvisMode } from "@/lib/jarvis-prompt";
 import { useVoiceInput, useVoiceOutput } from "@/lib/voice";
 import { cn } from "@/lib/utils";
 import { AppShell } from "@/components/os/AppShell";
@@ -57,17 +58,30 @@ interface Message {
   id: number;
   role: "CEO" | "JARVIS";
   text: string;
+  /** このJARVISメッセージがどちらのモードで生成されたか（CEO側メッセージには付けない）。 */
+  mode?: JarvisMode | undefined;
   plan?: Plan[] | undefined;
-  meta?: {
-    intent: string;
-    priority: string;
-    workflow: string;
-    approval: string;
-    risk: string;
-    osUpdates: string;
-    nextAction: string;
-  };
+  /** trueの場合、text はエラーメッセージ（⚠️〜）。タスク化ボタン等を出さないためのフラグ。 */
+  error?: boolean | undefined;
+  meta?:
+    | {
+        intent: string;
+        priority: string;
+        workflow: string;
+        approval: string;
+        risk: string;
+        osUpdates: string;
+        nextAction: string;
+      }
+    | undefined;
 }
+
+/**
+ * 相談モードの単発トリガー：「JARVIS、」（全角/半角どちらのカンマも可）で始まる
+ * メッセージは、現在のモードトグルの状態に関わらずそのメッセージだけ相談モード扱いにする。
+ */
+const CONSULTATION_PREFIX_RE = /^\s*jarvis\s*[、,]/i;
+const isConsultationTrigger = (text: string) => CONSULTATION_PREFIX_RE.test(text);
 
 const planFor = (text: string): Plan[] => {
   const t = text.toLowerCase();
@@ -118,19 +132,27 @@ function JarvisPage() {
   ]);
   const [input, setInput] = useState("");
   const [pending, setPending] = useState(false);
+  const [mode, setMode] = useState<JarvisMode>("instruction");
   const nextId = useRef(2);
   const scrollRef = useRef<HTMLDivElement>(null);
   const historyRef = useRef<{ role: "user" | "assistant"; content: string }[]>([]);
-  const submitRef = useRef<(text: string) => void>(() => {});
+  const submitRef = useRef<(text: string, modeOverride?: JarvisMode) => void>(() => {});
   const voiceOut = useVoiceOutput();
   const voiceIn = useVoiceInput((text) => submitRef.current(text));
 
-  const submit = (text: string) => {
+  /**
+   * modeOverrideを渡した場合はモードトグルの状態を無視してそのモードで送信する
+   * （相談内容を指示モードへ引き継ぐ「タスク化」ボタン用）。渡さない場合は、
+   * 「JARVIS、」の単発トリガーを優先し、なければ現在のモードトグルに従う。
+   */
+  const submit = (text: string, modeOverride?: JarvisMode) => {
     const value = text.trim();
     if (!value || pending) return;
+    const effectiveMode: JarvisMode =
+      modeOverride ?? (isConsultationTrigger(value) ? "consultation" : mode);
     const ceoId = nextId.current++;
     const jarvisId = nextId.current++;
-    const plan = planFor(value);
+    const plan = effectiveMode === "instruction" ? planFor(value) : undefined;
     setMessages((m) => [
       ...m,
       { id: ceoId, role: "CEO", text: value },
@@ -138,23 +160,27 @@ function JarvisPage() {
         id: jarvisId,
         role: "JARVIS",
         text: "",
+        mode: effectiveMode,
         plan,
-        meta: {
-          intent: value.slice(0, 60),
-          priority: "P1",
-          workflow: "JARVIS → 担当AI社員 → JARVIS → CEO",
-          approval: "重要事項は CEO 承認が必要",
-          risk: "MEDIUM",
-          osUpdates: "COMPANY OS 更新候補として保留",
-          nextAction: "実行を押すと JARVIS が各社員へ配分します（シミュレーション）",
-        },
+        meta:
+          effectiveMode === "instruction"
+            ? {
+                intent: value.slice(0, 60),
+                priority: "P1",
+                workflow: "JARVIS → 担当AI社員 → JARVIS → CEO",
+                approval: "重要事項は CEO 承認が必要",
+                risk: "MEDIUM",
+                osUpdates: "COMPANY OS 更新候補として保留",
+                nextAction: "実行を押すと JARVIS が各社員へ配分します（シミュレーション）",
+              }
+            : undefined,
       },
     ]);
     setInput("");
     setPending(true);
     historyRef.current = [...historyRef.current, { role: "user", content: value }];
 
-    void ask({ data: { messages: historyRef.current } })
+    void ask({ data: { messages: historyRef.current, mode: effectiveMode } })
       .then(({ reply }: { reply: string }) => {
         historyRef.current = [...historyRef.current, { role: "assistant", content: reply }];
         setMessages((m) => m.map((x) => (x.id === jarvisId ? { ...x, text: reply } : x)));
@@ -163,13 +189,20 @@ function JarvisPage() {
       .catch((err: unknown) => {
         const msg = err instanceof Error ? err.message : "JARVISとの通信に失敗しました。";
         setMessages((m) =>
-          m.map((x) => (x.id === jarvisId ? { ...x, text: `⚠️ ${msg}`, plan: undefined } : x)),
+          m.map((x) =>
+            x.id === jarvisId ? { ...x, text: `⚠️ ${msg}`, plan: undefined, error: true } : x,
+          ),
         );
       })
       .finally(() => setPending(false));
   };
 
   submitRef.current = submit;
+
+  const escalateToInstruction = () => {
+    setMode("instruction");
+    submit("この相談内容を踏まえて、実行計画を作ってください。", "instruction");
+  };
 
   useEffect(() => {
     if (q) submit(q);
@@ -223,6 +256,9 @@ function JarvisPage() {
                   <div key={m.id} className="flex gap-3">
                     <div className="mt-1 size-8 shrink-0 rounded-full bg-[radial-gradient(circle_at_40%_35%,color-mix(in_oklab,var(--primary)_90%,white),var(--primary)_60%,transparent)]" />
                     <div className="min-w-0 flex-1 space-y-3">
+                      {m.mode === "consultation" ? (
+                        <Tag tone="var(--emp-b)">相談モード</Tag>
+                      ) : null}
                       {m.text ? (
                         <p className="whitespace-pre-wrap text-sm leading-relaxed">{m.text}</p>
                       ) : (
@@ -231,6 +267,15 @@ function JarvisPage() {
                           JARVIS が思考中です…
                         </p>
                       )}
+                      {m.mode === "consultation" && m.text && !m.error ? (
+                        <button
+                          onClick={escalateToInstruction}
+                          disabled={pending}
+                          className="rounded-lg border border-border px-3 py-1.5 text-xs font-semibold hover:bg-accent disabled:opacity-50"
+                        >
+                          この内容を指示モードで実行案にする
+                        </button>
+                      ) : null}
                       {m.plan ? (
                         <div className="rounded-2xl border border-border bg-secondary/30 p-4">
                           <p className="label-caps">アクションプラン</p>
@@ -284,6 +329,32 @@ function JarvisPage() {
             </div>
 
             <div className="border-t border-border p-4">
+              <div className="mb-2 flex items-center gap-2">
+                <div className="flex rounded-lg border border-border p-1">
+                  {(["instruction", "consultation"] as const).map((m) => (
+                    <button
+                      key={m}
+                      type="button"
+                      onClick={() => setMode(m)}
+                      aria-pressed={mode === m}
+                      className={cn(
+                        "rounded-md px-3 py-1.5 text-xs font-semibold transition-colors",
+                        mode === m
+                          ? "bg-primary text-primary-foreground"
+                          : "text-muted-foreground hover:text-foreground",
+                      )}
+                    >
+                      {m === "instruction" ? "指示モード" : "相談モード"}
+                    </button>
+                  ))}
+                </div>
+                <span className="text-[11px] text-muted-foreground">
+                  {mode === "instruction"
+                    ? "依頼をタスクに分解し、A〜Fへ配分します"
+                    : "COO対CEOの1対1相談。分解・割り振りはしません"}
+                  ・「JARVIS、」で始めると、この一言だけ相談モードになります
+                </span>
+              </div>
               <form
                 onSubmit={(e) => {
                   e.preventDefault();
