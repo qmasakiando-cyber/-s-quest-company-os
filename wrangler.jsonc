@@ -1,8 +1,13 @@
 {
-  // Worker名を明示的に固定する。指定しなければnitroがgit remote originから
-  // 自動生成するが（qmasakiando-cyber--s-quest-company-os）、将来originが
-  // 変わってもデプロイ先が変わらないよう、ここで固定しておく。
-  "name": "qmasakiando-cyber--s-quest-company-os",
+  // Worker名を明示的に固定する。本番URL（https://s-quest-company-os.
+  // q-masaki-ando.workers.dev）から逆算した実際のWorker名（*.workers.devは
+  // {Worker名}.{アカウントのサブドメイン}.workers.dev という形式なので、
+  // ここから一意に決まる）。nitroの自動生成名（git remote originから
+  // 導出される qmasakiando-cyber--s-quest-company-os）とは異なるので注意
+  // ——過去にこの自動生成名を誤って明示指定してしまい、Workers Builds経由
+  // のデプロイ先（s-quest-company-os）とは別の空Workerを作ってしまう
+  // 事故があった。
+  "name": "s-quest-company-os",
 
   // 非機密の環境変数のみここに置く。npm run build（nitroのcloudflare-module
   // プリセット）がこのファイルを読み込み、.output/server/wrangler.json に
