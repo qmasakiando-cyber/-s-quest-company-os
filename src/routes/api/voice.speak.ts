@@ -4,6 +4,15 @@ export const Route = createFileRoute("/api/voice/speak")({
   server: {
     handlers: {
       POST: async ({ request }) => {
+        try {
+          const { requireCeoAuth } = await import("@/lib/auth.server");
+          await requireCeoAuth();
+        } catch (error) {
+          const message =
+            error instanceof Error ? error.message : "認証に失敗しました。";
+          return new Response(message, { status: 401 });
+        }
+
         const apiKey = process.env["LOVABLE_API_KEY"];
         if (!apiKey) return new Response("AIキーが設定されていません。", { status: 500 });
 

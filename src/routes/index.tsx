@@ -5,6 +5,7 @@ import { AppShell } from "@/components/os/AppShell";
 import { OfficeFloor } from "@/components/os/OfficeFloor";
 import {
   Delta,
+  DemoDataBadge,
   Meter,
   Panel,
   SectionTitle,
@@ -417,6 +418,7 @@ function HqPage() {
                 >
                   <div className="flex flex-wrap items-center gap-1.5">
                     <Tag tone={tone}>{a.level}</Tag>
+                    <DemoDataBadge />
                   </div>
                   <p className="mt-2 text-sm font-semibold">{a.title}</p>
                   <p className="mt-1 text-xs text-muted-foreground">{a.body}</p>

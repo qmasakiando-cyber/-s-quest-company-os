@@ -34,7 +34,7 @@ import { NOTIFICATIONS, EMPLOYEES } from "@/lib/company-data";
 import { useAuth } from "@/lib/use-auth";
 import { useTasks } from "@/lib/use-tasks";
 import { useWorkflows } from "@/lib/use-workflows";
-import { SimulationBadge } from "./primitives";
+import { DemoDataBadge, SimulationBadge } from "./primitives";
 import {
   Command,
   CommandEmpty,
@@ -175,7 +175,10 @@ function NotificationPanel() {
       </button>
       {open ? (
         <div className="panel absolute right-0 top-11 z-50 w-80 p-2">
-          <p className="label-caps px-3 py-2">通知センター</p>
+          <div className="flex items-center justify-between gap-2 px-3 py-2">
+            <p className="label-caps">通知センター</p>
+            <DemoDataBadge />
+          </div>
           <ul className="max-h-80 space-y-1 overflow-y-auto">
             {NOTIFICATIONS.map((n) => (
               <li

@@ -327,3 +327,26 @@ export function SimulationBadge({ className }: { className?: string }) {
     </span>
   );
 }
+
+/**
+ * SimulationBadgeは全ページ共通（このアプリ自体が仮想企業のシミュレーション
+ * である旨）なので、まだSupabase実データ化していないページ・要素だけに絞って
+ * 「これはデモデータです」を明示するための専用バッジ。
+ */
+export function DemoDataBadge({ className }: { className?: string }) {
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-[10px] font-semibold tracking-[0.14em]",
+        className,
+      )}
+      style={{
+        borderColor: "color-mix(in oklab, var(--muted-foreground) 40%, transparent)",
+        background: "color-mix(in oklab, var(--muted-foreground) 12%, transparent)",
+        color: "var(--muted-foreground)",
+      }}
+    >
+      デモデータ
+    </span>
+  );
+}
