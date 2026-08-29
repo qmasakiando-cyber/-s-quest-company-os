@@ -18,6 +18,7 @@ import { useCalendar } from "@/lib/use-calendar";
 import { useKpis } from "@/lib/use-kpis";
 import { useEmployeeLiveStates } from "@/lib/use-employee-live-states";
 import { useApprovals } from "@/lib/use-approvals";
+import { useCompanyHealth } from "@/lib/use-company-health";
 import type { EventKind, EventOwner } from "@/lib/calendar.server";
 import {
   ALERTS,
@@ -68,6 +69,8 @@ function HqPage() {
   const recognizerRef = useRef<any>(null);
   const sim = useCompanySimulation();
   const { setEmployees: setSimEmployees } = sim;
+  const { health: companyHealth } = useCompanyHealth();
+  const healthScore = companyHealth?.total ?? 0;
 
   // AIオフィスフロア：status/progress/currentTask/completedToday/lastActivity
   // は ai_employees の実データで上書きする（体の微アニメーション・引き渡し演出・
@@ -251,7 +254,9 @@ function HqPage() {
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <SimulationBadge />
-          <Tag tone="var(--success)">会社健全性 {sim.health}%</Tag>
+          <Link to="/company-health">
+            <Tag tone="var(--success)">会社健全性 {healthScore}/100</Tag>
+          </Link>
           <Tag tone="var(--primary)">本日売上 {jpy(sim.revenueToday)}</Tag>
         </div>
       </div>
@@ -343,7 +348,7 @@ function HqPage() {
           handoff={sim.handoff}
           questState={sim.questState}
           questMessage={sim.questMessage}
-          health={sim.health}
+          health={healthScore}
           currentTask="WF-06｜KPI Gap → Strategy → Sales リカバリー"
           companyStatus={companyStatus}
         />

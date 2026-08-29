@@ -9,7 +9,7 @@
  * the activity feed, JARVIS's own questState/questMessage, and the revenue
  * ticker.
  */
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   ACTIVITY,
   EMPLOYEES,
@@ -202,23 +202,6 @@ export function useCompanySimulation(enabled = true) {
     return () => window.clearInterval(id);
   }, [enabled]);
 
-  const health = useMemo(() => {
-    const activeScore =
-      employees.filter((e) => e.status !== "IDLE" && e.status !== "ERROR")
-        .length / employees.length;
-    const errorPenalty =
-      employees.filter((e) => e.status === "ERROR").length * 6;
-    const progressAvg =
-      employees.reduce((s, e) => s + e.progress, 0) / employees.length;
-    return Math.max(
-      60,
-      Math.min(
-        99,
-        Math.round(74 + activeScore * 16 + progressAvg * 0.09 - errorPenalty),
-      ),
-    );
-  }, [employees]);
-
   const workingCount = employees.filter(
     (e) => e.status === "WORKING" || e.status === "THINKING",
   ).length;
@@ -231,7 +214,6 @@ export function useCompanySimulation(enabled = true) {
     questState,
     questMessage,
     revenueToday,
-    health,
     workingCount,
   };
 }

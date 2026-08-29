@@ -2,7 +2,11 @@ import { Link } from "@tanstack/react-router";
 import { JarvisCore, type CoreState } from "./JarvisCore";
 import { Meter, Tag } from "./primitives";
 import type { Handoff, QuestState } from "@/lib/demo-mode";
-import { COMPANY_STATUS_LABEL, COMPANY_STATUS_TONE, type CompanyStatus } from "@/lib/company-data";
+import {
+  COMPANY_STATUS_LABEL,
+  COMPANY_STATUS_TONE,
+  type CompanyStatus,
+} from "@/lib/company-data";
 
 const CORE_STATE: Record<QuestState, CoreState> = {
   IDLE: "IDLE",
@@ -61,16 +65,26 @@ export function QuestCore({
             ) : null}
           </div>
           <div className="relative mt-4 aspect-square w-[240px] sm:w-[320px] lg:w-[420px] xl:w-[480px]">
-            <JarvisCore state={CORE_STATE[state]} size="100%" label="JARVIS" health={health} />
+            <JarvisCore
+              state={CORE_STATE[state]}
+              size="100%"
+              label="JARVIS"
+              health={health}
+            />
             {handoff ? (
               <span
                 className="animate-ping-soft absolute left-1/2 top-1/2 size-10 -translate-x-1/2 -translate-y-1/2 rounded-full"
-                style={{ background: "color-mix(in oklab, var(--primary) 45%, transparent)" }}
+                style={{
+                  background:
+                    "color-mix(in oklab, var(--primary) 45%, transparent)",
+                }}
                 aria-hidden
               />
             ) : null}
           </div>
-          <h2 className="mt-5 text-3xl font-semibold tracking-[0.18em] lg:text-5xl">JARVIS</h2>
+          <h2 className="mt-5 text-3xl font-semibold tracking-[0.18em] lg:text-5xl">
+            JARVIS
+          </h2>
           <p className="mt-2 text-xs font-semibold tracking-wide text-primary lg:text-sm">
             {STATE_LABEL[state]}
           </p>
@@ -79,19 +93,33 @@ export function QuestCore({
         <div className="space-y-3 text-left">
           <div className="rounded-xl border border-border bg-secondary/30 p-4">
             <p className="label-caps">現在の作業</p>
-            <p className="mt-1 text-sm text-foreground/90 lg:text-base">{currentTask}</p>
+            <p className="mt-1 text-sm text-foreground/90 lg:text-base">
+              {currentTask}
+            </p>
           </div>
           <div className="rounded-xl border border-border bg-secondary/30 p-4">
             <p className="label-caps">CEOへの報告</p>
-            <p className="mt-1 text-sm text-foreground/90 lg:text-base">{message}</p>
+            <p className="mt-1 text-sm text-foreground/90 lg:text-base">
+              {message}
+            </p>
           </div>
-          <div className="rounded-xl border border-border bg-secondary/30 p-4">
+          <Link
+            to="/company-health"
+            className="block rounded-xl border border-border bg-secondary/30 p-4 transition-colors hover:border-primary/40"
+          >
             <div className="flex items-center justify-between">
               <p className="label-caps">会社の健全性</p>
-              <span className="num-display text-lg text-[var(--success)]">{health}%</span>
+              <span className="num-display text-lg text-[var(--success)]">
+                {health}/100
+              </span>
             </div>
-            <Meter className="mt-2" value={health} tone="var(--success)" label="健全性" />
-          </div>
+            <Meter
+              className="mt-2"
+              value={health}
+              tone="var(--success)"
+              label="健全性"
+            />
+          </Link>
           {handoff ? (
             <p className="num-display text-[11px] text-muted-foreground">
               {handoff.from} → {handoff.to} 通信中…

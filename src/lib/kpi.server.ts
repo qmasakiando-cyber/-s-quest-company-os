@@ -90,6 +90,7 @@ export async function listKpis(): Promise<Kpi[]> {
       change: Math.round(change * 10) / 10,
       owner: kpi.owner ?? "JARVIS",
       trend,
+      achievementRate: targetValue !== 0 ? currentValue / targetValue : 1,
     };
   });
 }

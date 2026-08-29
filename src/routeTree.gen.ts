@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as ApprovalsRouteImport } from './routes/approvals'
 import { Route as AuditRouteImport } from './routes/audit'
 import { Route as CalendarRouteImport } from './routes/calendar'
+import { Route as CompanyHealthRouteImport } from './routes/company-health'
 import { Route as CompanyMapRouteImport } from './routes/company-map'
 import { Route as CompanyOsRouteImport } from './routes/company-os'
 import { Route as DecisionsRouteImport } from './routes/decisions'
@@ -53,6 +54,11 @@ const AuditRoute = AuditRouteImport.update({
 const CalendarRoute = CalendarRouteImport.update({
   id: '/calendar',
   path: '/calendar',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CompanyHealthRoute = CompanyHealthRouteImport.update({
+  id: '/company-health',
+  path: '/company-health',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CompanyMapRoute = CompanyMapRouteImport.update({
@@ -166,6 +172,7 @@ export interface FileRoutesByFullPath {
   '/approvals': typeof ApprovalsRoute
   '/audit': typeof AuditRoute
   '/calendar': typeof CalendarRoute
+  '/company-health': typeof CompanyHealthRoute
   '/company-map': typeof CompanyMapRoute
   '/company-os': typeof CompanyOsRoute
   '/decisions': typeof DecisionsRoute
@@ -193,6 +200,7 @@ export interface FileRoutesByTo {
   '/approvals': typeof ApprovalsRoute
   '/audit': typeof AuditRoute
   '/calendar': typeof CalendarRoute
+  '/company-health': typeof CompanyHealthRoute
   '/company-map': typeof CompanyMapRoute
   '/company-os': typeof CompanyOsRoute
   '/decisions': typeof DecisionsRoute
@@ -221,6 +229,7 @@ export interface FileRoutesById {
   '/approvals': typeof ApprovalsRoute
   '/audit': typeof AuditRoute
   '/calendar': typeof CalendarRoute
+  '/company-health': typeof CompanyHealthRoute
   '/company-map': typeof CompanyMapRoute
   '/company-os': typeof CompanyOsRoute
   '/decisions': typeof DecisionsRoute
@@ -250,6 +259,7 @@ export interface FileRouteTypes {
     | '/approvals'
     | '/audit'
     | '/calendar'
+    | '/company-health'
     | '/company-map'
     | '/company-os'
     | '/decisions'
@@ -277,6 +287,7 @@ export interface FileRouteTypes {
     | '/approvals'
     | '/audit'
     | '/calendar'
+    | '/company-health'
     | '/company-map'
     | '/company-os'
     | '/decisions'
@@ -304,6 +315,7 @@ export interface FileRouteTypes {
     | '/approvals'
     | '/audit'
     | '/calendar'
+    | '/company-health'
     | '/company-map'
     | '/company-os'
     | '/decisions'
@@ -332,6 +344,7 @@ export interface RootRouteChildren {
   ApprovalsRoute: typeof ApprovalsRoute
   AuditRoute: typeof AuditRoute
   CalendarRoute: typeof CalendarRoute
+  CompanyHealthRoute: typeof CompanyHealthRoute
   CompanyMapRoute: typeof CompanyMapRoute
   CompanyOsRoute: typeof CompanyOsRoute
   DecisionsRoute: typeof DecisionsRoute
@@ -383,6 +396,13 @@ declare module '@tanstack/react-router' {
       path: '/calendar'
       fullPath: '/calendar'
       preLoaderRoute: typeof CalendarRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/company-health': {
+      id: '/company-health'
+      path: '/company-health'
+      fullPath: '/company-health'
+      preLoaderRoute: typeof CompanyHealthRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/company-map': {
@@ -540,6 +560,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApprovalsRoute: ApprovalsRoute,
   AuditRoute: AuditRoute,
   CalendarRoute: CalendarRoute,
+  CompanyHealthRoute: CompanyHealthRoute,
   CompanyMapRoute: CompanyMapRoute,
   CompanyOsRoute: CompanyOsRoute,
   DecisionsRoute: DecisionsRoute,

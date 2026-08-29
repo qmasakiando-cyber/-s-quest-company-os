@@ -728,6 +728,9 @@ export interface Kpi {
   change: number;
   owner: string;
   trend: number[];
+  /** 現在値÷目標値（会社健全性スコアの算出用。高いほど良い指標のみを前提とする）。
+   *  Supabase kpi.server.ts から算出。company-data.ts の KPIS モックは未設定（DB側が正）。 */
+  achievementRate?: number;
 }
 
 export const KPIS: Kpi[] = [

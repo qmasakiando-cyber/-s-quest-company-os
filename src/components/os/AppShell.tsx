@@ -13,6 +13,7 @@ import {
   LogOut,
   Gauge,
   Gavel,
+  HeartPulse,
   Home,
   LayoutGrid,
   Menu,
@@ -57,6 +58,7 @@ const NAV = [
   { to: "/errors", label: "エラーセンター", icon: AlertTriangle },
   { to: "/company-os", label: "会社データベース", icon: LayoutGrid },
   { to: "/kpi", label: "KPI", icon: Gauge },
+  { to: "/company-health", label: "会社健全性", icon: HeartPulse },
   { to: "/revenue", label: "売上", icon: Wallet },
   { to: "/expenses", label: "経費管理", icon: Receipt },
   { to: "/outputs", label: "成果物管理", icon: PackageOpen },
@@ -227,6 +229,9 @@ function CommandPalette({
                 タスクを作成
               </CommandItem>
               <CommandItem onSelect={() => go("/kpi")}>KPIを開く</CommandItem>
+              <CommandItem onSelect={() => go("/company-health")}>
+                会社健全性を開く
+              </CommandItem>
               <CommandItem onSelect={() => go("/revenue")}>
                 売上を開く
               </CommandItem>
