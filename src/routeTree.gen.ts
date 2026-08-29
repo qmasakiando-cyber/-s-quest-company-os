@@ -25,7 +25,6 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as OutputsRouteImport } from './routes/outputs'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as ProjectsRouteImport } from './routes/projects'
-import { Route as ReportsRouteImport } from './routes/reports'
 import { Route as RevenueRouteImport } from './routes/revenue'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as TasksRouteImport } from './routes/tasks'
@@ -116,11 +115,6 @@ const ProjectsRoute = ProjectsRouteImport.update({
   path: '/projects',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ReportsRoute = ReportsRouteImport.update({
-  id: '/reports',
-  path: '/reports',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const RevenueRoute = RevenueRouteImport.update({
   id: '/revenue',
   path: '/revenue',
@@ -184,7 +178,6 @@ export interface FileRoutesByFullPath {
   '/outputs': typeof OutputsRoute
   '/profile': typeof ProfileRoute
   '/projects': typeof ProjectsRoute
-  '/reports': typeof ReportsRoute
   '/revenue': typeof RevenueRoute
   '/settings': typeof SettingsRoute
   '/tasks': typeof TasksRoute
@@ -212,7 +205,6 @@ export interface FileRoutesByTo {
   '/outputs': typeof OutputsRoute
   '/profile': typeof ProfileRoute
   '/projects': typeof ProjectsRoute
-  '/reports': typeof ReportsRoute
   '/revenue': typeof RevenueRoute
   '/settings': typeof SettingsRoute
   '/tasks': typeof TasksRoute
@@ -241,7 +233,6 @@ export interface FileRoutesById {
   '/outputs': typeof OutputsRoute
   '/profile': typeof ProfileRoute
   '/projects': typeof ProjectsRoute
-  '/reports': typeof ReportsRoute
   '/revenue': typeof RevenueRoute
   '/settings': typeof SettingsRoute
   '/tasks': typeof TasksRoute
@@ -271,7 +262,6 @@ export interface FileRouteTypes {
     | '/outputs'
     | '/profile'
     | '/projects'
-    | '/reports'
     | '/revenue'
     | '/settings'
     | '/tasks'
@@ -299,7 +289,6 @@ export interface FileRouteTypes {
     | '/outputs'
     | '/profile'
     | '/projects'
-    | '/reports'
     | '/revenue'
     | '/settings'
     | '/tasks'
@@ -327,7 +316,6 @@ export interface FileRouteTypes {
     | '/outputs'
     | '/profile'
     | '/projects'
-    | '/reports'
     | '/revenue'
     | '/settings'
     | '/tasks'
@@ -356,7 +344,6 @@ export interface RootRouteChildren {
   OutputsRoute: typeof OutputsRoute
   ProfileRoute: typeof ProfileRoute
   ProjectsRoute: typeof ProjectsRoute
-  ReportsRoute: typeof ReportsRoute
   RevenueRoute: typeof RevenueRoute
   SettingsRoute: typeof SettingsRoute
   TasksRoute: typeof TasksRoute
@@ -482,13 +469,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProjectsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/reports': {
-      id: '/reports'
-      path: '/reports'
-      fullPath: '/reports'
-      preLoaderRoute: typeof ReportsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/revenue': {
       id: '/revenue'
       path: '/revenue'
@@ -572,7 +552,6 @@ const rootRouteChildren: RootRouteChildren = {
   OutputsRoute: OutputsRoute,
   ProfileRoute: ProfileRoute,
   ProjectsRoute: ProjectsRoute,
-  ReportsRoute: ReportsRoute,
   RevenueRoute: RevenueRoute,
   SettingsRoute: SettingsRoute,
   TasksRoute: TasksRoute,

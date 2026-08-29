@@ -46,7 +46,7 @@ JARVIS（AI COO）── 司令塔・タスク分解・連携・統括・報告
   - `/jarvis`：管制センター
   - `/employees`（`/$code`）：社員一覧および個別画面
   - `/tasks` / `/projects` / `/workflows`：業務フロー・タスク管理
-  - `/kpi` / `/revenue` / `/reports` / `/audit`：分析・収益・監査ログ
+  - `/kpi` / `/revenue` / `/audit`：分析・収益・監査ログ
 - **データ層（`src/lib/company-data.ts`）**：AI社員のマスターデータ、タスク定義、進行状況の管理構造（現状は SIMULATION MODE のモックデータ）
 
 ---

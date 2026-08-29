@@ -63,11 +63,34 @@ export const Route = createFileRoute("/")({
   component: HqPage,
 });
 
+function useNowLabel() {
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 30_000);
+    return () => clearInterval(id);
+  }, []);
+  return useMemo(() => {
+    const parts = new Intl.DateTimeFormat("ja-JP", {
+      timeZone: "Asia/Tokyo",
+      year: "numeric",
+      month: "numeric",
+      day: "numeric",
+      weekday: "short",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    }).formatToParts(now);
+    const get = (type: string) => parts.find((p) => p.type === type)?.value ?? "";
+    return `${get("year")}年${get("month")}月${get("day")}日（${get("weekday")}）${get("hour")}:${get("minute")} JST`;
+  }, [now]);
+}
+
 function HqPage() {
   const navigate = useNavigate();
   const [prompt, setPrompt] = useState("");
   const [listening, setListening] = useState(false);
   const recognizerRef = useRef<any>(null);
+  const nowLabel = useNowLabel();
   const sim = useCompanySimulation();
   const { setEmployees: setSimEmployees } = sim;
   const { health: companyHealth } = useCompanyHealth();
@@ -242,9 +265,7 @@ function HqPage() {
       {/* ── HQ header ── */}
       <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="label-caps">
-            S-QUEST COMPANY 本社 · 2026年8月26日（水）21:38 JST
-          </p>
+          <p className="label-caps">S-QUEST COMPANY 本社 · {nowLabel}</p>
           <h1 className="mt-2 text-3xl font-semibold tracking-tight sm:text-4xl">
             こんばんは、CEO。
           </h1>
