@@ -1,7 +1,12 @@
 import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { AppShell } from "@/components/os/AppShell";
-import { PageHeader, Panel, SimulationBadge, Tag } from "@/components/os/primitives";
+import {
+  PageHeader,
+  Panel,
+  SimulationBadge,
+  Tag,
+} from "@/components/os/primitives";
 import { useCalendar } from "@/lib/use-calendar";
 import { empColor } from "@/lib/company-data";
 
@@ -11,7 +16,8 @@ export const Route = createFileRoute("/calendar")({
       { title: "Calendar — S-QUEST COMPANY" },
       {
         name: "description",
-        content: "会議・タスク・Workflow・Deadline・承認予定を統合したAI COMPANYのカレンダー。",
+        content:
+          "会議・タスク・Workflow・Deadline・承認予定を統合したAI COMPANYのカレンダー。",
       },
       { property: "og:title", content: "Calendar — S-QUEST COMPANY" },
       {
@@ -68,9 +74,13 @@ function CalendarPage() {
         }
       />
 
-      {error ? <p className="mb-3 text-xs text-destructive">⚠️ {error}</p> : null}
+      {error ? (
+        <p className="mb-3 text-xs text-destructive">⚠️ {error}</p>
+      ) : null}
       {loading && !days.length ? (
-        <p className="mb-3 text-xs text-muted-foreground">カレンダーを読み込んでいます…</p>
+        <p className="mb-3 text-xs text-muted-foreground">
+          カレンダーを読み込んでいます…
+        </p>
       ) : null}
 
       <div
@@ -84,22 +94,46 @@ function CalendarPage() {
           <Panel key={d.date} className="p-4">
             <div className="mb-3 flex items-center justify-between">
               <p className="label-caps">{d.day}</p>
-              <span className="num-display text-xs text-muted-foreground">{d.date}</span>
+              <span className="num-display text-xs text-muted-foreground">
+                {d.date}
+              </span>
             </div>
             <ul className="space-y-2">
               {d.items.map((i) => (
                 <li
                   key={i.time + i.title}
-                  className="rounded-xl border border-border bg-secondary/25 px-3 py-2"
+                  className="rounded-xl border px-3 py-2"
+                  style={
+                    i.source === "google"
+                      ? {
+                          borderColor:
+                            "color-mix(in oklab, #4285F4 35%, var(--border))",
+                          background:
+                            "color-mix(in oklab, #4285F4 6%, var(--secondary))",
+                        }
+                      : {
+                          borderColor: "var(--border)",
+                          background:
+                            "color-mix(in oklab, var(--secondary) 25%, transparent)",
+                        }
+                  }
                 >
                   <div className="flex items-center justify-between gap-2">
-                    <span className="num-display text-xs text-muted-foreground">{i.time}</span>
-                    <Tag tone={kindTone(i.kind)}>{i.kind}</Tag>
+                    <span className="num-display text-xs text-muted-foreground">
+                      {i.time}
+                    </span>
+                    {i.source === "google" ? (
+                      <Tag tone="#4285F4">Google</Tag>
+                    ) : (
+                      <Tag tone={kindTone(i.kind)}>{i.kind}</Tag>
+                    )}
                   </div>
                   <p className="mt-1 text-sm">{i.title}</p>
-                  <div className="mt-1.5">
-                    <Tag tone={empColor(i.who)}>{i.who}</Tag>
-                  </div>
+                  {i.source === "google" ? null : (
+                    <div className="mt-1.5">
+                      <Tag tone={empColor(i.who)}>{i.who}</Tag>
+                    </div>
+                  )}
                 </li>
               ))}
             </ul>

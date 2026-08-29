@@ -22,6 +22,8 @@ export interface CalendarItem {
   title: string;
   kind: EventKind;
   who: EventOwner;
+  /** "google" ならGoogleカレンダー由来（表示のみ、書き込み・同期はしない）。 */
+  source?: "google";
 }
 
 /** Same shape as company-data.ts's CALENDAR_EVENTS mock: events grouped by day. */
@@ -58,7 +60,11 @@ const TIME_LABEL = (d: Date) =>
 const dayKey = (d: Date) =>
   d.toLocaleDateString("en-CA", { timeZone: "Asia/Tokyo" }); // YYYY-MM-DD
 
-/** Fetches the next 7 days of events, grouped by calendar day like the old mock. */
+/**
+ * Fetches the next 7 days of events, grouped by calendar day like the old
+ * mock. Supabase側（calendar_events）とGoogleカレンダー（表示のみ、鍵未設定
+ * や取得失敗時は静かに空扱い）を並行取得してマージする。
+ */
 export async function listCalendarEvents(): Promise<CalendarDay[]> {
   const supabase = await getSupabaseServerClient();
   const now = new Date();
@@ -68,13 +74,20 @@ export async function listCalendarEvents(): Promise<CalendarDay[]> {
   const rangeEnd = new Date(rangeStart);
   rangeEnd.setDate(rangeEnd.getDate() + 7);
 
-  const { data, error } = await supabase
-    .from("calendar_events")
-    .select("*")
-    .gte("start_at", rangeStart.toISOString())
-    .lt("start_at", rangeEnd.toISOString())
-    .neq("status", "cancelled")
-    .order("start_at", { ascending: true });
+  const [{ data, error }, googleItems] = await Promise.all([
+    supabase
+      .from("calendar_events")
+      .select("*")
+      .gte("start_at", rangeStart.toISOString())
+      .lt("start_at", rangeEnd.toISOString())
+      .neq("status", "cancelled")
+      .order("start_at", { ascending: true }),
+    (async () => {
+      const { listGoogleCalendarEvents } =
+        await import("./google-calendar.server");
+      return listGoogleCalendarEvents(rangeStart, rangeEnd);
+    })(),
+  ]);
   if (error)
     throw new Error(`カレンダーの取得に失敗しました: ${error.message}`);
 
@@ -90,6 +103,14 @@ export async function listCalendarEvents(): Promise<CalendarDay[]> {
       kind: row.kind,
       who: row.owner ?? "JARVIS",
     });
+  }
+  for (const { startAt, item } of googleItems) {
+    const key = dayKey(startAt);
+    if (!byDay.has(key)) byDay.set(key, { date: startAt, items: [] });
+    byDay.get(key)!.items.push(item);
+  }
+  for (const { items } of byDay.values()) {
+    items.sort((a, b) => a.time.localeCompare(b.time));
   }
 
   return Array.from(byDay.entries())
