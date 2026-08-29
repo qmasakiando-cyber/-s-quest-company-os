@@ -1,0 +1,25 @@
+{
+  // Worker名を明示的に固定する。指定しなければnitroがgit remote originから
+  // 自動生成するが（qmasakiando-cyber--s-quest-company-os）、将来originが
+  // 変わってもデプロイ先が変わらないよう、ここで固定しておく。
+  "name": "qmasakiando-cyber--s-quest-company-os",
+
+  // 非機密の環境変数のみここに置く。npm run build（nitroのcloudflare-module
+  // プリセット）がこのファイルを読み込み、.output/server/wrangler.json に
+  // マージしてくれるので、pushするたびに自動で本番へ反映される。
+  //
+  // Cloudflareダッシュボードで手動設定したVariables/Secretsは、
+  // wrangler経由のデプロイ（このリポジトリのGitHub連携含む）のたびに
+  // 上書き・消去される仕様のため、ここに書かない限り消える。
+  //
+  // 機密情報（GEMINI_API_KEY / SUPABASE_ANON_KEY /
+  // GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY）は、このファイルにもGitにも
+  // 絶対に書かないこと。`wrangler secret put <NAME>` で個別に設定する
+  // （手順はコミットメッセージ・作業ログ参照）。
+  "vars": {
+    "REQUIRE_CEO_LOGIN": "true",
+    "SUPABASE_URL": "https://prwgicpsglugnmmjdfya.supabase.co",
+    "GOOGLE_SERVICE_ACCOUNT_EMAIL": "s-quest-company@gen-lang-client-0026018743.iam.gserviceaccount.com",
+    "GOOGLE_CALENDAR_ID": "q.masaki.ando@gmail.com"
+  }
+}
