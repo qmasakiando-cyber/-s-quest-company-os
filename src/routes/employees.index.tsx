@@ -4,7 +4,6 @@ import { EmployeeCard } from "@/components/os/EmployeeCard";
 import {
   PageHeader,
   Panel,
-  SimulationBadge,
   Tag,
 } from "@/components/os/primitives";
 import {
@@ -47,14 +46,11 @@ function EmployeesPage() {
         title="AI社員"
         description="AI社員はCEO権限を持ちません。外部公開・送信・支払い・削除はすべてCEO承認が必要です。"
         actions={
-          <div className="flex items-center gap-3">
-            {liveStatesError ? (
-              <span className="text-xs text-destructive">
-                ⚠️{liveStatesError}
-              </span>
-            ) : null}
-            <SimulationBadge />
-          </div>
+          liveStatesError ? (
+            <span className="text-xs text-destructive">
+              ⚠️{liveStatesError}
+            </span>
+          ) : undefined
         }
       />
 

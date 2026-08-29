@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { AppShell } from "@/components/os/AppShell";
-import { PageHeader, Panel, Tag, SimulationBadge } from "@/components/os/primitives";
+import { PageHeader, Panel, Tag } from "@/components/os/primitives";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useTasks } from "@/lib/use-tasks";
 import { TASK_COLUMNS, empColor, type Task, type TaskStatus } from "@/lib/company-data";
@@ -76,7 +76,6 @@ function TasksPage() {
         description="AI社員のタスクはすべてJARVISが配分します。重要操作は承認ゲートを通過します。"
         actions={
           <>
-            <SimulationBadge />
             <div className="flex rounded-lg border border-border p-1">
               {(["Kanban", "List", "カレンダー"] as const).map((v) => (
                 <button

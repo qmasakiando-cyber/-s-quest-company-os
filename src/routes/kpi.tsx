@@ -2,7 +2,7 @@ import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { Area, AreaChart, ResponsiveContainer } from "recharts";
 import { AppShell } from "@/components/os/AppShell";
-import { Delta, PageHeader, Panel, SimulationBadge, Tag } from "@/components/os/primitives";
+import { Delta, PageHeader, Panel, Tag } from "@/components/os/primitives";
 import { useKpis } from "@/lib/use-kpis";
 import { empColor, type Kpi } from "@/lib/company-data";
 
@@ -92,7 +92,6 @@ function KpiPage() {
         eyebrow="計測"
         title="KPI"
         description="主要KPIが目標比 -10% を超えると WF-06（KPI → Strategy）が自動起動します。"
-        actions={<SimulationBadge />}
       />
 
       {error ? <p className="mb-3 text-xs text-destructive">⚠️ {error}</p> : null}

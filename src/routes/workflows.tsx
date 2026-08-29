@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { ChevronDown } from "lucide-react";
 import { AppShell } from "@/components/os/AppShell";
-import { Meter, PageHeader, Panel, SectionTitle, SimulationBadge, Tag } from "@/components/os/primitives";
+import { Meter, PageHeader, Panel, SectionTitle, Tag } from "@/components/os/primitives";
 import { useWorkflows } from "@/lib/use-workflows";
 import {
   APPROVAL_LEVEL_SHORT_LABEL,
@@ -55,7 +55,6 @@ function WorkflowsPage() {
         eyebrow="オーケストレーション"
         title="ワークフロー"
         description="Workflowは常に JARVIS を中心に流れます。重要操作の前には必ず承認ゲートが入ります。"
-        actions={<SimulationBadge />}
       />
 
       {error ? <p className="mb-3 text-xs text-destructive">⚠️ {error}</p> : null}

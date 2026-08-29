@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { AppShell } from "@/components/os/AppShell";
-import { Meter, PageHeader, Panel, SimulationBadge, Tag } from "@/components/os/primitives";
+import { DemoDataBadge, Meter, PageHeader, Panel, Tag } from "@/components/os/primitives";
 import { PROJECTS, empColor } from "@/lib/company-data";
 
 export const Route = createFileRoute("/projects")({
@@ -31,7 +31,7 @@ function ProjectsPage() {
         eyebrow="デリバリー"
         title="プロジェクト"
         description="プロジェクトごとに担当AI社員・進捗・KPI・リスクを紐づけます。"
-        actions={<SimulationBadge />}
+        actions={<DemoDataBadge />}
       />
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">

@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { AppShell } from "@/components/os/AppShell";
-import { DemoDataBadge, PageHeader, Panel, SectionTitle, SimulationBadge, Tag } from "@/components/os/primitives";
+import { DemoDataBadge, PageHeader, Panel, SectionTitle, Tag } from "@/components/os/primitives";
 import { AUDIT_LOGS, COMPANY_OS } from "@/lib/company-data";
 
 export const Route = createFileRoute("/audit")({
@@ -37,12 +37,7 @@ function AuditPage() {
         eyebrow="ガバナンス"
         title="監査ログ"
         description="AI社員にCEO権限はありません。外部公開・送信・支払い・契約・削除・本番変更は承認ゲートを通過します。"
-        actions={
-          <div className="flex items-center gap-2">
-            <DemoDataBadge />
-            <SimulationBadge />
-          </div>
-        }
+        actions={<DemoDataBadge />}
       />
 
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_300px]">

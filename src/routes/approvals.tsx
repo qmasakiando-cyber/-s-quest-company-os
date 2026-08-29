@@ -13,7 +13,6 @@ import {
   PageHeader,
   Panel,
   SectionTitle,
-  SimulationBadge,
   Tag,
 } from "@/components/os/primitives";
 import { useApprovals } from "@/lib/use-approvals";
@@ -141,7 +140,6 @@ function ApprovalsPage() {
         eyebrow="経営判断"
         title="承認センター"
         description="AI社員はCEO権限を持たない。外部公開・送信・支払い・契約・削除・本番変更・重要なOS更新は、すべてここでCEOが判断する。"
-        actions={<SimulationBadge />}
       />
 
       {error ? (

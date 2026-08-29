@@ -11,7 +11,7 @@ import {
   YAxis,
 } from "recharts";
 import { AppShell } from "@/components/os/AppShell";
-import { DemoDataBadge, Meter, PageHeader, Panel, SectionTitle, SimulationBadge } from "@/components/os/primitives";
+import { DemoDataBadge, Meter, PageHeader, Panel, SectionTitle } from "@/components/os/primitives";
 import { REVENUE, REVENUE_SERIES, jpy } from "@/lib/company-data";
 
 export const Route = createFileRoute("/revenue")({
@@ -52,12 +52,7 @@ function RevenuePage() {
         eyebrow="ファイナンス"
         title="売上"
         description="D｜Sales が集計し、F｜QA がデータ整合性を確認した実績値を表示します。"
-        actions={
-          <div className="flex items-center gap-2">
-            <DemoDataBadge />
-            <SimulationBadge />
-          </div>
-        }
+        actions={<DemoDataBadge />}
       />
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">

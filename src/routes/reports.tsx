@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { AppShell } from "@/components/os/AppShell";
-import { PageHeader, Panel, SectionTitle, SimulationBadge, Tag } from "@/components/os/primitives";
+import { DemoDataBadge, PageHeader, Panel, SectionTitle, Tag } from "@/components/os/primitives";
 import { DAILY_REPORT, REPORTS } from "@/lib/company-data";
 
 export const Route = createFileRoute("/reports")({
@@ -44,7 +44,7 @@ function ReportsPage() {
         eyebrow="インテリジェンス"
         title="レポート"
         description="AI社員の報告はJARVISが統合し、CEO向けに要約されます。"
-        actions={<SimulationBadge />}
+        actions={<DemoDataBadge />}
       />
 
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px]">

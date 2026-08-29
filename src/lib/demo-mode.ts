@@ -8,6 +8,12 @@
  * owns the parts that have no real-data equivalent: the handoff animation,
  * the activity feed, JARVIS's own questState/questMessage, and the revenue
  * ticker.
+ *
+ * DEMO_MODE is the single on/off switch for this theater. false stops the
+ * handoff/activity/ticker intervals (useCompanySimulation defaults its
+ * `enabled` param to this) and DeskCard hides the Lv./経験値/本日の割当数
+ * display that has no real-data equivalent. LIVE運用に切り替える際はここを
+ * falseにする（本番運用ロードマップの一部、現時点ではデフォルトtrueのまま）。
  */
 import { useEffect, useRef, useState } from "react";
 import {
@@ -138,7 +144,7 @@ const clock = () =>
 
 const pick = <T>(arr: T[]) => arr[Math.floor(Math.random() * arr.length)]!;
 
-export function useCompanySimulation(enabled = true) {
+export function useCompanySimulation(enabled: boolean = DEMO_MODE) {
   const [employees, setEmployees] = useState<LiveEmployee[]>(initialEmployees);
   const [activity, setActivity] = useState<LiveActivity[]>(initialActivity);
   const [handoff, setHandoff] = useState<Handoff | null>(null);

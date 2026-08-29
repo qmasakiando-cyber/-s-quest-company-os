@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { AppShell } from "@/components/os/AppShell";
-import { PageHeader, Panel, SectionTitle, SimulationBadge, Tag } from "@/components/os/primitives";
+import { DemoDataBadge, PageHeader, Panel, SectionTitle, Tag } from "@/components/os/primitives";
 import {
   COMPANY_OS,
   OS_CATEGORIES,
@@ -42,7 +42,7 @@ function CompanyOsPage() {
         description="AI社員は担当領域のみ WRITE 可能。重要な更新は CEO 承認を経て版が上がります。"
         actions={
           <>
-            <SimulationBadge />
+            <DemoDataBadge />
             <Tag tone="var(--primary)">COMPANY OS v1.0</Tag>
           </>
         }

@@ -4,7 +4,6 @@ import { AppShell } from "@/components/os/AppShell";
 import {
   PageHeader,
   Panel,
-  SimulationBadge,
   Tag,
 } from "@/components/os/primitives";
 import { useCalendar } from "@/lib/use-calendar";
@@ -53,7 +52,6 @@ function CalendarPage() {
         description="タスク・会議・Workflow・Deadline を統合表示します。"
         actions={
           <>
-            <SimulationBadge />
             <div className="flex rounded-lg border border-border p-1">
               {(["Month", "Week", "Day"] as const).map((m) => (
                 <button

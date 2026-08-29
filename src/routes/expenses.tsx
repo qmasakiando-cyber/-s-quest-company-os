@@ -18,7 +18,6 @@ import {
   PageHeader,
   Panel,
   SectionTitle,
-  SimulationBadge,
   Tag,
 } from "@/components/os/primitives";
 import { useExpenses } from "@/lib/use-expenses";
@@ -127,7 +126,6 @@ function ExpensesPage() {
         eyebrow="ファイナンス"
         title="経費管理"
         description="A〜Fの担当領域ではなく、会社全体の支出を横断的に把握するJARVIS（AI COO）直轄の台帳。ここは記帳のみを扱い、新規支出の事前承認は承認センターで扱う。"
-        actions={<SimulationBadge />}
       />
 
       <Panel className="mb-6 flex items-center gap-6 p-5">

@@ -7,7 +7,7 @@ import {
   STATUS_TONE,
   getWorkingCaption,
 } from "@/lib/company-data";
-import type { LiveEmployee } from "@/lib/demo-mode";
+import { DEMO_MODE, type LiveEmployee } from "@/lib/demo-mode";
 
 export function DeskCard({
   employee,
@@ -57,7 +57,7 @@ export function DeskCard({
               {employee.code}・{profile.name}
             </h3>
             <p className="text-[10px] text-muted-foreground">
-              {employee.name}／Lv.{employee.level}
+              {DEMO_MODE ? `${employee.name}／Lv.${employee.level}` : employee.name}
             </p>
           </div>
         </div>
@@ -110,25 +110,33 @@ export function DeskCard({
         label="進捗"
       />
 
-      <dl className="mt-3 grid grid-cols-3 gap-2 text-center text-[10px] text-muted-foreground">
-        <div>
-          <dt>本日</dt>
-          <dd className="num-display text-xs text-foreground">
-            {employee.todayTasks}
-          </dd>
-        </div>
+      <dl
+        className={`mt-3 grid gap-2 text-center text-[10px] text-muted-foreground ${
+          DEMO_MODE ? "grid-cols-3" : "grid-cols-1"
+        }`}
+      >
+        {DEMO_MODE ? (
+          <div>
+            <dt>本日</dt>
+            <dd className="num-display text-xs text-foreground">
+              {employee.todayTasks}
+            </dd>
+          </div>
+        ) : null}
         <div>
           <dt>完了</dt>
           <dd className="num-display text-xs text-foreground">
             {employee.completedToday}
           </dd>
         </div>
-        <div>
-          <dt>経験値</dt>
-          <dd className="num-display text-xs text-foreground">
-            {Math.round((employee.xp / employee.xpNext) * 100)}%
-          </dd>
-        </div>
+        {DEMO_MODE ? (
+          <div>
+            <dt>経験値</dt>
+            <dd className="num-display text-xs text-foreground">
+              {Math.round((employee.xp / employee.xpNext) * 100)}%
+            </dd>
+          </div>
+        ) : null}
       </dl>
 
       <div className="mt-3 flex items-center justify-between">

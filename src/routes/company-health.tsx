@@ -8,7 +8,6 @@ import {
   PageHeader,
   Panel,
   SectionTitle,
-  SimulationBadge,
   Tag,
 } from "@/components/os/primitives";
 import { useCompanyHealth } from "@/lib/use-company-health";
@@ -63,7 +62,6 @@ function CompanyHealthPage() {
         eyebrow="経営指標"
         title="会社健全性"
         description="売上・利益／タスク進捗／AI社員稼働／品質／システム／リスクの6項目から算出する、会社全体の健全性スコア。"
-        actions={<SimulationBadge />}
       />
 
       {error ? (

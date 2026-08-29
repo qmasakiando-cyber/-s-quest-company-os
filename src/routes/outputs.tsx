@@ -7,7 +7,6 @@ import {
   PageHeader,
   Panel,
   SectionTitle,
-  SimulationBadge,
   Tag,
 } from "@/components/os/primitives";
 import {
@@ -142,7 +141,6 @@ function OutputsPage() {
         eyebrow="AI社員"
         title="成果物管理"
         description="A〜Fが作成したレポート・企画書・施策案などの成果物を横断的に一覧・管理する。進行状態は「タスク」、社員個人の稼働状況は「AI社員」ページを参照。ここは成果物そのものを読む場所。"
-        actions={<SimulationBadge />}
       />
 
       {error ? (
