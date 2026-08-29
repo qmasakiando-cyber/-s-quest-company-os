@@ -1288,6 +1288,24 @@ export const APPROVAL_LEVEL_TONE: Record<ApprovalLevel, string> = {
   L3: "var(--destructive)",
 };
 
+export type ApprovalStatus = "pending" | "approved" | "rejected";
+
+export interface Approval {
+  id: string;
+  requestedBy: EmployeeCode | "JARVIS";
+  approvalLevel: ApprovalLevel;
+  title: string;
+  body: string;
+  action: string;
+  reason: string;
+  risk: string;
+  expected: string;
+  relatedTaskId: string | null;
+  status: ApprovalStatus;
+  decidedAt: string | null;
+  createdAt: string;
+}
+
 export interface Workflow {
   code: string;
   name: string;

@@ -17,6 +17,7 @@ import { useTasks } from "@/lib/use-tasks";
 import { useCalendar } from "@/lib/use-calendar";
 import { useKpis } from "@/lib/use-kpis";
 import { useEmployeeLiveStates } from "@/lib/use-employee-live-states";
+import { useApprovals } from "@/lib/use-approvals";
 import type { EventKind, EventOwner } from "@/lib/calendar.server";
 import {
   ALERTS,
@@ -29,6 +30,7 @@ import {
   REVENUE,
   computeCompanyStatus,
   formatLastActivity,
+  type Approval,
   type EmployeeCode,
   empColor,
   jpy,
@@ -62,7 +64,6 @@ export const Route = createFileRoute("/")({
 function HqPage() {
   const navigate = useNavigate();
   const [prompt, setPrompt] = useState("");
-  const [approvalOpen, setApprovalOpen] = useState(false);
   const [listening, setListening] = useState(false);
   const recognizerRef = useRef<any>(null);
   const sim = useCompanySimulation();
@@ -142,8 +143,15 @@ function HqPage() {
       ),
     [KPIS],
   );
-  const approval = ALERTS.find((a) => a.level === "APPROVAL")!;
   const revenuePct = Math.round((REVENUE.monthly / REVENUE.goal) * 100);
+
+  // ── CEOの確認が必要（実データの承認依頼 + 静的なWARNING/CRITICALアラート） ──
+  const { approvals: allApprovals, decide: decideApproval } = useApprovals();
+  const pendingApprovals = allApprovals.filter((a) => a.status === "pending");
+  const staticAlerts = ALERTS.filter((a) => a.level !== "APPROVAL");
+  const [selectedApproval, setSelectedApproval] = useState<Approval | null>(
+    null,
+  );
 
   // ── quick task board (ダッシュボードから直接タスク管理、Supabase永続化) ──
   const {
@@ -354,50 +362,64 @@ function HqPage() {
             </Link>
           }
         />
-        <div className="grid gap-3 lg:grid-cols-3">
-          {ALERTS.map((a) => {
-            const tone =
-              a.level === "APPROVAL"
-                ? "var(--warning)"
-                : a.level === "CRITICAL"
-                  ? "var(--destructive)"
-                  : a.level === "WARNING"
-                    ? "var(--emp-d)"
-                    : "var(--info)";
-            return (
+        {pendingApprovals.length === 0 && staticAlerts.length === 0 ? (
+          <p className="text-sm text-muted-foreground">
+            現在、CEOの確認が必要な項目はありません。
+          </p>
+        ) : (
+          <div className="grid gap-3 lg:grid-cols-3">
+            {pendingApprovals.map((a) => (
               <div
-                key={a.title}
+                key={a.id}
                 className="rounded-xl border p-4"
                 style={{
-                  borderColor: `color-mix(in oklab, ${tone} 32%, transparent)`,
-                  background: `color-mix(in oklab, ${tone} 8%, transparent)`,
+                  borderColor:
+                    "color-mix(in oklab, var(--warning) 32%, transparent)",
+                  background:
+                    "color-mix(in oklab, var(--warning) 8%, transparent)",
                 }}
               >
                 <div className="flex flex-wrap items-center gap-1.5">
-                  <Tag tone={tone}>{a.level}</Tag>
-                  {a.approvalLevel ? (
-                    <Tag tone={APPROVAL_LEVEL_TONE[a.approvalLevel]}>
-                      {a.approvalLevel} ·{" "}
-                      {APPROVAL_LEVEL_SHORT_LABEL[a.approvalLevel]}
-                    </Tag>
-                  ) : null}
+                  <Tag tone="var(--warning)">APPROVAL</Tag>
+                  <Tag tone={APPROVAL_LEVEL_TONE[a.approvalLevel]}>
+                    {a.approvalLevel} ·{" "}
+                    {APPROVAL_LEVEL_SHORT_LABEL[a.approvalLevel]}
+                  </Tag>
                 </div>
                 <p className="mt-2 text-sm font-semibold">{a.title}</p>
                 <p className="mt-1 text-xs text-muted-foreground">{a.body}</p>
-                {a.level === "APPROVAL" ? (
-                  <div className="mt-3 flex gap-2">
-                    <button
-                      onClick={() => setApprovalOpen(true)}
-                      className="rounded-lg bg-primary px-3 py-1.5 text-[11px] font-semibold text-primary-foreground"
-                    >
-                      承認画面を開く
-                    </button>
-                  </div>
-                ) : null}
+                <div className="mt-3 flex gap-2">
+                  <button
+                    onClick={() => setSelectedApproval(a)}
+                    className="rounded-lg bg-primary px-3 py-1.5 text-[11px] font-semibold text-primary-foreground"
+                  >
+                    承認画面を開く
+                  </button>
+                </div>
               </div>
-            );
-          })}
-        </div>
+            ))}
+            {staticAlerts.map((a) => {
+              const tone =
+                a.level === "CRITICAL" ? "var(--destructive)" : "var(--emp-d)";
+              return (
+                <div
+                  key={a.title}
+                  className="rounded-xl border p-4"
+                  style={{
+                    borderColor: `color-mix(in oklab, ${tone} 32%, transparent)`,
+                    background: `color-mix(in oklab, ${tone} 8%, transparent)`,
+                  }}
+                >
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <Tag tone={tone}>{a.level}</Tag>
+                  </div>
+                  <p className="mt-2 text-sm font-semibold">{a.title}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">{a.body}</p>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </section>
 
       {/* ── KPI row ── */}
@@ -682,11 +704,16 @@ function HqPage() {
         </Panel>
       </section>
 
-      <ApprovalModal
-        open={approvalOpen}
-        onOpenChange={setApprovalOpen}
-        request={approval}
-      />
+      {selectedApproval ? (
+        <ApprovalModal
+          open={true}
+          onOpenChange={(v) => {
+            if (!v) setSelectedApproval(null);
+          }}
+          request={selectedApproval}
+          onDecide={(approved) => decideApproval(selectedApproval.id, approved)}
+        />
+      ) : null}
     </AppShell>
   );
 }

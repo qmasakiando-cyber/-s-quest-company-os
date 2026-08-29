@@ -1,10 +1,20 @@
 import { useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppShell } from "@/components/os/AppShell";
-import { ApprovalModal, type ApprovalRequest } from "@/components/os/ApprovalModal";
-import { ErrorState, PageHeader, SectionTitle, SimulationBadge, Tag } from "@/components/os/primitives";
+import {
+  ApprovalModal,
+  type ApprovalRequest,
+} from "@/components/os/ApprovalModal";
+import {
+  ErrorState,
+  PageHeader,
+  SectionTitle,
+  SimulationBadge,
+  Tag,
+} from "@/components/os/primitives";
 import { useWorkflows } from "@/lib/use-workflows";
-import { ALERTS, APPROVAL_LEVEL_LABEL } from "@/lib/company-data";
+import { useApprovals } from "@/lib/use-approvals";
+import { APPROVAL_LEVEL_LABEL } from "@/lib/company-data";
 
 export const Route = createFileRoute("/decisions")({
   head: () => ({
@@ -15,10 +25,14 @@ export const Route = createFileRoute("/decisions")({
         content:
           "承認レベル L3（会社の重要意思決定＝CEO承認必須）だけを抽出する、CEO専決の意思決定センター。",
       },
-      { property: "og:title", content: "CEO Decision Center — S-QUEST COMPANY" },
+      {
+        property: "og:title",
+        content: "CEO Decision Center — S-QUEST COMPANY",
+      },
       {
         property: "og:description",
-        content: "JARVISでもAI社員でも完結しない、CEOにしか決められないことだけをここに集約する。",
+        content:
+          "JARVISでもAI社員でも完結しない、CEOにしか決められないことだけをここに集約する。",
       },
     ],
   }),
@@ -26,12 +40,15 @@ export const Route = createFileRoute("/decisions")({
 });
 
 function DecisionsPage() {
-  const l3Alerts = ALERTS.filter((a) => a.approvalLevel === "L3");
+  const { approvals, decide } = useApprovals();
+  const l3Approvals = approvals.filter(
+    (a) => a.approvalLevel === "L3" && a.status === "pending",
+  );
   const { workflows, loading, error } = useWorkflows();
   const l3Workflows = workflows.filter((w) => w.approvalLevel === "L3");
   const [selected, setSelected] = useState<ApprovalRequest | null>(null);
 
-  const total = l3Alerts.length + l3Workflows.length;
+  const total = l3Approvals.length + l3Workflows.length;
 
   return (
     <AppShell>
@@ -52,16 +69,23 @@ function DecisionsPage() {
         }
       />
 
-      <div className="mb-6 flex items-center gap-2 rounded-xl border p-3 text-xs" style={{
-        borderColor: "color-mix(in oklab, var(--destructive) 40%, transparent)",
-        background: "color-mix(in oklab, var(--destructive) 10%, transparent)",
-        color: "var(--destructive)",
-      }}>
+      <div
+        className="mb-6 flex items-center gap-2 rounded-xl border p-3 text-xs"
+        style={{
+          borderColor:
+            "color-mix(in oklab, var(--destructive) 40%, transparent)",
+          background:
+            "color-mix(in oklab, var(--destructive) 10%, transparent)",
+          color: "var(--destructive)",
+        }}
+      >
         <Tag tone="var(--destructive)">L3</Tag>
         <span>{APPROVAL_LEVEL_LABEL.L3}</span>
       </div>
 
-      {error ? <p className="mb-4 text-xs text-destructive">⚠️ {error}</p> : null}
+      {error ? (
+        <p className="mb-4 text-xs text-destructive">⚠️ {error}</p>
+      ) : null}
 
       {!loading && total === 0 ? (
         <ErrorState
@@ -71,30 +95,40 @@ function DecisionsPage() {
         />
       ) : (
         <div className="space-y-8">
-          {l3Alerts.length ? (
+          {l3Approvals.length ? (
             <section>
-              <SectionTitle title="今すぐ判断が必要" hint="この場でApprove / Rejectできます" />
+              <SectionTitle
+                title="今すぐ判断が必要"
+                hint="この場でApprove / Rejectできます"
+              />
               <div className="grid gap-3 lg:grid-cols-2">
-                {l3Alerts.map((a) => (
+                {l3Approvals.map((a) => (
                   <div
-                    key={a.title}
+                    key={a.id}
                     className="rounded-2xl border-2 p-5"
                     style={{
-                      borderColor: "color-mix(in oklab, var(--destructive) 45%, transparent)",
-                      background: "color-mix(in oklab, var(--destructive) 9%, transparent)",
+                      borderColor:
+                        "color-mix(in oklab, var(--destructive) 45%, transparent)",
+                      background:
+                        "color-mix(in oklab, var(--destructive) 9%, transparent)",
                     }}
                   >
                     <div className="flex flex-wrap items-center gap-1.5">
-                      <Tag tone="var(--destructive)">{a.level}</Tag>
+                      <Tag tone="var(--destructive)">{a.requestedBy}</Tag>
                       <Tag tone="var(--destructive)">L3 · CEO承認必須</Tag>
                     </div>
                     <p className="mt-2 text-base font-semibold">{a.title}</p>
-                    <p className="mt-1 text-sm text-muted-foreground">{a.body}</p>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      {a.body}
+                    </p>
                     <p className="mt-2 text-[11px] text-muted-foreground">
                       <span className="text-foreground/70">Risk </span>
                       {a.risk}
                     </p>
-                    <p className="mt-3 text-[11px] font-semibold" style={{ color: "var(--destructive)" }}>
+                    <p
+                      className="mt-3 text-[11px] font-semibold"
+                      style={{ color: "var(--destructive)" }}
+                    >
                       この判断はCEOのみが行えます。
                     </p>
                     <button
@@ -121,16 +155,22 @@ function DecisionsPage() {
                     key={w.code}
                     className="rounded-2xl border-2 p-5"
                     style={{
-                      borderColor: "color-mix(in oklab, var(--destructive) 45%, transparent)",
-                      background: "color-mix(in oklab, var(--destructive) 9%, transparent)",
+                      borderColor:
+                        "color-mix(in oklab, var(--destructive) 45%, transparent)",
+                      background:
+                        "color-mix(in oklab, var(--destructive) 9%, transparent)",
                     }}
                   >
                     <div className="flex flex-wrap items-center gap-1.5">
-                      <span className="num-display text-sm font-semibold text-primary">{w.code}</span>
+                      <span className="num-display text-sm font-semibold text-primary">
+                        {w.code}
+                      </span>
                       <Tag tone="var(--destructive)">L3 · CEO承認必須</Tag>
                     </div>
                     <p className="mt-2 text-base font-semibold">{w.name}</p>
-                    <p className="mt-1 text-sm text-muted-foreground">{w.description}</p>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      {w.description}
+                    </p>
                     <p className="mt-2 text-[11px] text-muted-foreground">
                       <span className="text-foreground/70">Approval Gate </span>
                       {w.approvalGate}
@@ -156,6 +196,7 @@ function DecisionsPage() {
             if (!v) setSelected(null);
           }}
           request={selected}
+          onDecide={(approved) => decide(selected.id, approved)}
         />
       ) : null}
     </AppShell>
