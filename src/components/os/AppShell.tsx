@@ -34,6 +34,8 @@ import { NOTIFICATIONS, EMPLOYEES } from "@/lib/company-data";
 import { useAuth } from "@/lib/use-auth";
 import { useTasks } from "@/lib/use-tasks";
 import { useWorkflows } from "@/lib/use-workflows";
+import { useApprovals } from "@/lib/use-approvals";
+import { useEmployeeLiveStates } from "@/lib/use-employee-live-states";
 import { DemoDataBadge, SimulationBadge } from "./primitives";
 import {
   Command,
@@ -300,6 +302,18 @@ function CommandPalette({
 export function AppShell({ children }: { children: ReactNode }) {
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const { states: liveStates } = useEmployeeLiveStates();
+  const { approvals } = useApprovals();
+  const pendingApprovalCount = approvals.filter(
+    (a) => a.status === "pending",
+  ).length;
+  const completedTodayParts = EMPLOYEES.map((e) => ({
+    code: e.code,
+    count: liveStates[e.code]?.completedToday ?? 0,
+  })).filter((p) => p.count > 0);
+  const completedTodayLabel = completedTodayParts.length
+    ? completedTodayParts.map((p) => `${p.code} ${p.count}件`).join(" · ")
+    : "0件";
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -387,9 +401,9 @@ export function AppShell({ children }: { children: ReactNode }) {
             JARVIS 稼働中 — WF-06 KPI → 戦略
           </span>
           <span className="hidden sm:inline">
-            本日の完了：A 6件 · B 4件 · C 5件 · D 3件 · E 7件 · F 9件
+            本日の完了：{completedTodayLabel}
           </span>
-          <span>承認待ち 1件</span>
+          <span>承認待ち {pendingApprovalCount}件</span>
         </div>
       </div>
 
