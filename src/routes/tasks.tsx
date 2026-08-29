@@ -131,8 +131,8 @@ function TasksPage() {
       ) : null}
 
       {view === "List" ? (
-        <Panel className="p-0">
-          <table className="w-full text-sm">
+        <Panel className="overflow-x-auto p-0">
+          <table className="w-full min-w-[640px] text-sm">
             <thead>
               <tr className="border-b border-border text-left">
                 {["ID", "Title", "Assignee", "Priority", "Status", "Due"].map((h) => (
