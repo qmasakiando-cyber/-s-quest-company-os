@@ -80,20 +80,31 @@ const randomTaskId = () => `TSK-${Math.floor(1000 + Math.random() * 9000)}`;
 export async function createTask(input: {
   title: string;
   assignee: EmployeeCode;
+  priority?: Priority | undefined;
+  /** "jarvis"：JARVISチャットでの提案をCEOが実行ボタンで確定した場合。省略時は従来通りダッシュボードからの追加として記録する。 */
+  source?: "dashboard" | "jarvis" | undefined;
 }): Promise<Task> {
   const supabase = await getSupabaseServerClient();
+  const fromJarvis = input.source === "jarvis";
   const baseRow = {
     title: input.title,
     description: "",
     status: "TODO" as TaskStatus,
-    priority: "P2" as Priority,
+    priority: input.priority ?? ("P2" as Priority),
     assignee: input.assignee,
-    created_by: "CEO",
+    created_by: fromJarvis ? "JARVIS" : "CEO",
     project: "S-QUEST Company",
     workflow: "—",
     dependencies: [],
     comments: [],
-    log: [{ at: fmtTime(new Date()), text: "CEOがダッシュボードから追加" }],
+    log: [
+      {
+        at: fmtTime(new Date()),
+        text: fromJarvis
+          ? "JARVISが会話からの提案をCEOの実行確認を経て作成"
+          : "CEOがダッシュボードから追加",
+      },
+    ],
   };
 
   // id is a short human-readable code (e.g. "TSK-1041"); retry a few times on

@@ -20,6 +20,24 @@ export const askJarvis = createServerFn({ method: "POST" })
   .inputValidator((data: unknown) => schema.parse(data))
   .handler(async ({ data }) => {
     const { callJarvis } = await import("./jarvis.server");
-    const reply = await callJarvis(data.messages, data.mode);
-    return { reply };
+    const { text, proposedTask } = await callJarvis(data.messages, data.mode);
+    return { reply: text, proposedTask };
+  });
+
+const confirmTaskSchema = z.object({
+  title: z.string().trim().min(1).max(200),
+  assignee: z.enum(["A", "B", "C", "D", "E", "F"]),
+  priority: z.enum(["P0", "P1", "P2"]).optional(),
+});
+
+/**
+ * JARVISがcreate_taskで提案した内容を、CEOが実行ボタンで確定した時にだけ呼ばれる。
+ * モデルの提案をそのまま信用せず、ここでも改めてzodバリデーションする。
+ */
+export const confirmJarvisTaskFn = createServerFn({ method: "POST" })
+  .middleware([requireCeoAuthMiddleware])
+  .inputValidator((data: unknown) => confirmTaskSchema.parse(data))
+  .handler(async ({ data }) => {
+    const { createTask } = await import("./tasks.server");
+    return createTask({ ...data, source: "jarvis" });
   });

@@ -158,5 +158,9 @@ export async function getHealthRecommendation(
 
 この状況を踏まえて、CEOが今すぐ実行すべき最も重要なアクションを1つだけ、担当するAI社員（A〜F）を明示した上で、40字程度の短い一文で提案してください。JARVISとしての意見を一言で述べてください。見出しや箇条書きは不要です。`;
 
-  return callJarvis([{ role: "user", content: prompt }], "consultation");
+  const { text } = await callJarvis(
+    [{ role: "user", content: prompt }],
+    "consultation",
+  );
+  return text;
 }

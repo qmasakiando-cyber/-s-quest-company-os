@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from "react";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { Loader2, Mic, Send, Square, Volume2, VolumeX } from "lucide-react";
 import { z } from "zod";
 import { useServerFn } from "@tanstack/react-start";
-import { askJarvis } from "@/lib/jarvis.functions";
+import { askJarvis, confirmJarvisTaskFn } from "@/lib/jarvis.functions";
 import type { JarvisMode } from "@/lib/jarvis-prompt";
 import { useVoiceInput, useVoiceOutput } from "@/lib/voice";
 import { cn } from "@/lib/utils";
@@ -28,6 +28,8 @@ import {
   REVENUE,
   empColor,
   jpy,
+  type EmployeeCode,
+  type Priority,
 } from "@/lib/company-data";
 
 export const Route = createFileRoute("/jarvis")({
@@ -54,9 +56,11 @@ export const Route = createFileRoute("/jarvis")({
   component: JarvisPage,
 });
 
-interface Plan {
-  employee: string;
-  job: string;
+/** JARVISが会話から提案する、唯一のアクション（v1）。実行はCEOの実行ボタン確認を経る。 */
+interface ProposedTask {
+  title: string;
+  assignee: EmployeeCode;
+  priority?: Priority | undefined;
 }
 
 interface Message {
@@ -65,19 +69,14 @@ interface Message {
   text: string;
   /** このJARVISメッセージがどちらのモードで生成されたか（CEO側メッセージには付けない）。 */
   mode?: JarvisMode | undefined;
-  plan?: Plan[] | undefined;
-  /** trueの場合、text はエラーメッセージ（⚠️〜）。タスク化ボタン等を出さないためのフラグ。 */
+  /** trueの場合、text はエラーメッセージ（⚠️〜）。提案カード等を出さないためのフラグ。 */
   error?: boolean | undefined;
-  meta?:
-    | {
-        intent: string;
-        priority: string;
-        workflow: string;
-        approval: string;
-        risk: string;
-        osUpdates: string;
-        nextAction: string;
-      }
+  proposedTask?: ProposedTask | undefined;
+  /** 実行ボタンを押した後の状態。"executing"中は多重クリックを防ぐ。 */
+  taskExecution?:
+    | { status: "executing" }
+    | { status: "done"; taskId: string }
+    | { status: "failed"; message: string }
     | undefined;
 }
 
@@ -89,46 +88,10 @@ const CONSULTATION_PREFIX_RE = /^\s*jarvis\s*[、,]/i;
 const isConsultationTrigger = (text: string) =>
   CONSULTATION_PREFIX_RE.test(text);
 
-const planFor = (text: string): Plan[] => {
-  const t = text.toLowerCase();
-  if (t.includes("売上") || t.includes("revenue") || t.includes("kpi"))
-    return [
-      { employee: "A", job: "売上要因の一次データ収集" },
-      { employee: "D", job: "Sales pipeline 分析" },
-      { employee: "E", job: "Marketing funnel 分析" },
-      { employee: "B", job: "原因統合・改善戦略の設計" },
-      { employee: "F", job: "データ整合性確認" },
-    ];
-  if (t.includes("instagram") || t.includes("sns") || t.includes("content"))
-    return [
-      { employee: "A", job: "競合SNS施策のリサーチ" },
-      { employee: "B", job: "投稿戦略とKPI設計" },
-      { employee: "C", job: "クリエイティブ案の作成" },
-      { employee: "E", job: "投稿カレンダー設計" },
-      { employee: "F", job: "ブランド規約・事実確認" },
-    ];
-  if (t.includes("診断") || t.includes("離脱"))
-    return [
-      { employee: "A", job: "離脱区間データの収集" },
-      { employee: "C", job: "UX改善案の設計" },
-      { employee: "B", job: "優先順位と期待効果の算定" },
-      { employee: "F", job: "ロジック整合性の確認" },
-    ];
-  if (t.includes("タスク") || t.includes("task"))
-    return [
-      { employee: "JARVIS", job: "未完了タスクの再優先順位付け" },
-      { employee: "F", job: "ブロッカーのリスク確認" },
-    ];
-  return [
-    { employee: "A", job: "前提情報のリサーチ" },
-    { employee: "B", job: "アプローチ設計" },
-    { employee: "F", job: "品質確認" },
-  ];
-};
-
 function JarvisPage() {
   const { q } = Route.useSearch();
   const ask = useServerFn(askJarvis);
+  const confirmTask = useServerFn(confirmJarvisTaskFn);
   const { tasks } = useTasks();
   const { kpis } = useKpis();
   const { states: liveStates } = useEmployeeLiveStates();
@@ -165,30 +128,10 @@ function JarvisPage() {
       modeOverride ?? (isConsultationTrigger(value) ? "consultation" : mode);
     const ceoId = nextId.current++;
     const jarvisId = nextId.current++;
-    const plan = effectiveMode === "instruction" ? planFor(value) : undefined;
     setMessages((m) => [
       ...m,
       { id: ceoId, role: "CEO", text: value },
-      {
-        id: jarvisId,
-        role: "JARVIS",
-        text: "",
-        mode: effectiveMode,
-        plan,
-        meta:
-          effectiveMode === "instruction"
-            ? {
-                intent: value.slice(0, 60),
-                priority: "P1",
-                workflow: "JARVIS → 担当AI社員 → JARVIS → CEO",
-                approval: "重要事項は CEO 承認が必要",
-                risk: "MEDIUM",
-                osUpdates: "COMPANY OS 更新候補として保留",
-                nextAction:
-                  "実行を押すと JARVIS が各社員へ配分します（シミュレーション）",
-              }
-            : undefined,
-      },
+      { id: jarvisId, role: "JARVIS", text: "", mode: effectiveMode },
     ]);
     setInput("");
     setPending(true);
@@ -198,13 +141,15 @@ function JarvisPage() {
     ];
 
     void ask({ data: { messages: historyRef.current, mode: effectiveMode } })
-      .then(({ reply }: { reply: string }) => {
+      .then(({ reply, proposedTask }) => {
         historyRef.current = [
           ...historyRef.current,
           { role: "assistant", content: reply },
         ];
         setMessages((m) =>
-          m.map((x) => (x.id === jarvisId ? { ...x, text: reply } : x)),
+          m.map((x) =>
+            x.id === jarvisId ? { ...x, text: reply, proposedTask } : x,
+          ),
         );
         void voiceOut.speak(reply);
       })
@@ -214,7 +159,12 @@ function JarvisPage() {
         setMessages((m) =>
           m.map((x) =>
             x.id === jarvisId
-              ? { ...x, text: `⚠️ ${msg}`, plan: undefined, error: true }
+              ? {
+                  ...x,
+                  text: `⚠️ ${msg}`,
+                  proposedTask: undefined,
+                  error: true,
+                }
               : x,
           ),
         );
@@ -227,6 +177,41 @@ function JarvisPage() {
   const escalateToInstruction = () => {
     setMode("instruction");
     submit("この相談内容を踏まえて、実行計画を作ってください。", "instruction");
+  };
+
+  /** JARVISが提案したタスクを、CEOの実行ボタン確認を経て実際に作成する。 */
+  const executeProposedTask = (messageId: number, task: ProposedTask) => {
+    setMessages((m) =>
+      m.map((x) =>
+        x.id === messageId
+          ? { ...x, taskExecution: { status: "executing" } }
+          : x,
+      ),
+    );
+    void confirmTask({ data: task })
+      .then((created) => {
+        setMessages((m) =>
+          m.map((x) =>
+            x.id === messageId
+              ? {
+                  ...x,
+                  taskExecution: { status: "done", taskId: created.id },
+                }
+              : x,
+          ),
+        );
+      })
+      .catch((err: unknown) => {
+        const msg =
+          err instanceof Error ? err.message : "タスクの作成に失敗しました。";
+        setMessages((m) =>
+          m.map((x) =>
+            x.id === messageId
+              ? { ...x, taskExecution: { status: "failed", message: msg } }
+              : x,
+          ),
+        );
+      });
   };
 
   useEffect(() => {
@@ -315,55 +300,62 @@ function JarvisPage() {
                           この内容を指示モードで実行案にする
                         </button>
                       ) : null}
-                      {m.plan ? (
+                      {m.proposedTask ? (
                         <div className="rounded-2xl border border-border bg-secondary/30 p-4">
-                          <p className="label-caps">アクションプラン</p>
-                          <ol className="mt-3 space-y-2">
-                            {m.plan.map((p) => (
-                              <li
-                                key={p.employee + p.job}
-                                className="flex items-center gap-3"
-                              >
-                                <span
-                                  className="grid size-7 place-items-center rounded-lg text-[11px] font-bold"
-                                  style={{
-                                    background: `color-mix(in oklab, ${empColor(p.employee)} 16%, transparent)`,
-                                    color: empColor(p.employee),
-                                  }}
-                                >
-                                  {p.employee === "JARVIS" ? "Q" : p.employee}
-                                </span>
-                                <span className="text-sm">{p.job}</span>
-                              </li>
-                            ))}
-                          </ol>
-                          {m.meta ? (
-                            <dl className="mt-4 grid gap-2 border-t border-border pt-3 text-xs sm:grid-cols-2">
-                              {[
-                                ["優先度", m.meta.priority],
-                                ["ワークフロー", m.meta.workflow],
-                                ["承認", m.meta.approval],
-                                ["リスク", m.meta.risk],
-                                ["COMPANY OS", m.meta.osUpdates],
-                                ["次のアクション", m.meta.nextAction],
-                              ].map(([k, v]) => (
-                                <div key={k}>
-                                  <dt className="label-caps">{k}</dt>
-                                  <dd className="mt-0.5 text-foreground/80">
-                                    {v}
-                                  </dd>
-                                </div>
-                              ))}
-                            </dl>
-                          ) : null}
-                          <div className="mt-4 flex gap-2">
-                            <button className="rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground hover:opacity-90">
-                              実行
-                            </button>
-                            <button className="rounded-lg border border-border px-4 py-2 text-xs font-semibold hover:bg-accent">
-                              修正
-                            </button>
+                          <p className="label-caps">タスク作成の提案</p>
+                          <div className="mt-3 flex items-center gap-3">
+                            <span
+                              className="grid size-7 place-items-center rounded-lg text-[11px] font-bold"
+                              style={{
+                                background: `color-mix(in oklab, ${empColor(m.proposedTask.assignee)} 16%, transparent)`,
+                                color: empColor(m.proposedTask.assignee),
+                              }}
+                            >
+                              {m.proposedTask.assignee}
+                            </span>
+                            <span className="text-sm">
+                              {m.proposedTask.title}
+                            </span>
+                            {m.proposedTask.priority ? (
+                              <Tag tone="var(--muted-foreground)">
+                                {m.proposedTask.priority}
+                              </Tag>
+                            ) : null}
                           </div>
+
+                          {m.taskExecution?.status === "done" ? (
+                            <p className="mt-4 text-sm text-success">
+                              ✅ タスクを作成しました：{m.taskExecution.taskId}
+                              。
+                              <Link
+                                to="/tasks"
+                                className="ml-1 underline underline-offset-2"
+                              >
+                                タスク一覧を開く
+                              </Link>
+                            </p>
+                          ) : (
+                            <div className="mt-4 flex items-center gap-2">
+                              <button
+                                onClick={() =>
+                                  executeProposedTask(m.id, m.proposedTask!)
+                                }
+                                disabled={
+                                  m.taskExecution?.status === "executing"
+                                }
+                                className="rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50"
+                              >
+                                {m.taskExecution?.status === "executing"
+                                  ? "作成しています…"
+                                  : "実行（タスクを作成）"}
+                              </button>
+                              {m.taskExecution?.status === "failed" ? (
+                                <span className="text-xs text-destructive">
+                                  ⚠️ {m.taskExecution.message}
+                                </span>
+                              ) : null}
+                            </div>
+                          )}
                         </div>
                       ) : null}
                     </div>
