@@ -76,7 +76,7 @@ function HqPage() {
   // AIオフィスフロア：status/progress/currentTask/completedToday/lastActivity
   // は ai_employees の実データで上書きする（体の微アニメーション・引き渡し演出・
   // 売上ティッカーは sim 側の演出のまま）。COMPANY STATUS バッジも同じ実データから算出。
-  const { states: liveStates } = useEmployeeLiveStates();
+  const { states: liveStates, error: liveStatesError } = useEmployeeLiveStates();
   useEffect(() => {
     setSimEmployees((prev) =>
       prev.map((emp) => {
@@ -336,12 +336,19 @@ function HqPage() {
           title="AIオフィスフロア"
           hint="A〜FのAI社員はすべて JARVIS を経由して連携します"
           action={
-            <Link
-              to="/employees"
-              className="text-xs text-muted-foreground hover:text-foreground"
-            >
-              社員一覧
-            </Link>
+            <div className="flex items-center gap-3">
+              {liveStatesError ? (
+                <span className="text-xs text-destructive">
+                  ⚠️{liveStatesError}
+                </span>
+              ) : null}
+              <Link
+                to="/employees"
+                className="text-xs text-muted-foreground hover:text-foreground"
+              >
+                社員一覧
+              </Link>
+            </div>
           }
         />
         <OfficeFloor

@@ -4,9 +4,23 @@ import { getSupabaseServerClient } from "./supabase.server";
  * 段階導入フラグ（本番運用ロードマップ4番目）。false の間はログイン機能は
  * 存在するが強制しない。true に切り替えるまでは今まで通り未ログインでも
  * 全ページ・全サーバー関数にアクセスできる。
+ *
+ * 値は "true" / "false" の厳密一致のみ受け付ける。未設定・空文字・タイプミス
+ * （例: "True"）を「ログイン不要」側へ暗黙にfail-openさせないよう、それ以外の
+ * 値はモジュール読み込み時点で例外にする（このモジュールを最初にimportする
+ * サーバー関数呼び出しで即座に失敗が表面化する）。
  */
+const rawRequireCeoLogin = process.env["REQUIRE_CEO_LOGIN"];
+if (rawRequireCeoLogin !== "true" && rawRequireCeoLogin !== "false") {
+  throw new Error(
+    `REQUIRE_CEO_LOGIN の値が不正です（現在の値: ${JSON.stringify(rawRequireCeoLogin)}）。` +
+      `.env に "true" または "false" を明示的に設定してください。`,
+  );
+}
+const CEO_LOGIN_REQUIRED = rawRequireCeoLogin === "true";
+
 export function isCeoLoginRequired(): boolean {
-  return process.env["REQUIRE_CEO_LOGIN"] === "true";
+  return CEO_LOGIN_REQUIRED;
 }
 
 export async function signInWithPassword(

@@ -37,7 +37,8 @@ export const Route = createFileRoute("/employees/")({
 function EmployeesPage() {
   // 稼働状況（status・progress・currentTask・completedToday・lastActivity）は
   // Supabase の ai_employees から読み込む（表示のみ、書き込みなし）
-  const { states: liveStates } = useEmployeeLiveStates();
+  const { states: liveStates, error: liveStatesError } =
+    useEmployeeLiveStates();
 
   return (
     <AppShell>
@@ -45,7 +46,16 @@ function EmployeesPage() {
         eyebrow="組織"
         title="AI社員"
         description="AI社員はCEO権限を持ちません。外部公開・送信・支払い・削除はすべてCEO承認が必要です。"
-        actions={<SimulationBadge />}
+        actions={
+          <div className="flex items-center gap-3">
+            {liveStatesError ? (
+              <span className="text-xs text-destructive">
+                ⚠️{liveStatesError}
+              </span>
+            ) : null}
+            <SimulationBadge />
+          </div>
+        }
       />
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">

@@ -45,7 +45,11 @@ export async function getSupabaseServerClient(): Promise<SupabaseClient> {
             ...(options as Parameters<typeof setCookie>[2]),
             httpOnly: true,
             sameSite: "lax",
-            secure: process.env["NODE_ENV"] === "production",
+            // process.env["NODE_ENV"]はデプロイ先（Cloudflare Workers等）が
+            // 必ず設定してくれるとは限らない。import.meta.env.PRODはVite/nitroが
+            // ビルド時（vite build＝production mode）に静的に確定させる値なので、
+            // 実行時の環境変数設定漏れの影響を受けない
+            secure: import.meta.env.PROD,
             path: "/",
           });
         }

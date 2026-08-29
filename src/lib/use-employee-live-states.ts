@@ -17,6 +17,7 @@ export function useEmployeeLiveStates() {
     Partial<Record<EmployeeCode, EmployeeLiveState>>
   >({});
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const listFn = useServerFn(listEmployeeLiveStatesFn);
 
@@ -24,8 +25,12 @@ export function useEmployeeLiveStates() {
     try {
       const data = await listFn();
       setStates(Object.fromEntries(data.map((s) => [s.code, s])));
-    } catch {
-      // Supabase未到達時は呼び出し側の静的値へのフォールバックに任せる
+      setError(null);
+    } catch (err) {
+      // Supabase未到達時は呼び出し側の静的値へのフォールバックに任せるが、
+      // サイレント障害にならないようコンソールと呼び出し側の両方に伝える
+      console.error("useEmployeeLiveStates: refresh failed", err);
+      setError("最新データを取得できませんでした。表示は前回値のままです。");
     } finally {
       setLoading(false);
     }
@@ -37,5 +42,5 @@ export function useEmployeeLiveStates() {
     return () => window.clearInterval(id);
   }, [refresh]);
 
-  return { states, loading, refresh };
+  return { states, loading, error, refresh };
 }
