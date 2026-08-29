@@ -1,9 +1,8 @@
-import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { AppShell } from "@/components/os/AppShell";
-import { PageHeader, Panel, SectionTitle, SimulationBadge, Tag } from "@/components/os/primitives";
-import { Switch } from "@/components/ui/switch";
-import { EMPLOYEES } from "@/lib/company-data";
+import { PageHeader, Panel, SectionTitle, SimulationBadge } from "@/components/os/primitives";
+import { cn } from "@/lib/utils";
+import { DEMO_MODE } from "@/lib/demo-mode";
 
 export const Route = createFileRoute("/settings")({
   head: () => ({
@@ -11,12 +10,12 @@ export const Route = createFileRoute("/settings")({
       { title: "Settings — S-QUEST COMPANY" },
       {
         name: "description",
-        content: "Simulation Mode、CEOプロファイル、AI社員の有効化、承認ゲート、外部連携アダプタの設定。",
+        content: "CEOプロファイルと外部連携アダプタの接続状況を管理。",
       },
       { property: "og:title", content: "Settings — S-QUEST COMPANY" },
       {
         property: "og:description",
-        content: "COMPANY OS の動作設定と、将来の外部連携アダプタの状態を管理。",
+        content: "COMPANY OS の動作設定と、外部連携アダプタの接続状況を管理。",
       },
     ],
   }),
@@ -24,54 +23,52 @@ export const Route = createFileRoute("/settings")({
 });
 
 const ADAPTERS = [
-  "Real LLM integration",
-  "Gmail",
-  "Google Calendar",
-  "Slack",
-  "CRM",
-  "Social media",
-  "Analytics",
-  "Payment",
-  "Affiliate",
-  "Job APIs",
+  { name: "Real LLM integration", connected: true },
+  { name: "Gmail", connected: false },
+  { name: "Google Calendar", connected: true },
+  { name: "Slack", connected: false },
+  { name: "CRM", connected: false },
+  { name: "Social media", connected: false },
+  { name: "Analytics", connected: false },
+  { name: "Payment", connected: false },
+  { name: "Affiliate", connected: false },
+  { name: "Job APIs", connected: false },
 ];
 
 function SettingsPage() {
-  const [simulation, setSimulation] = useState(true);
-  const [enabled, setEnabled] = useState<Record<string, boolean>>(
-    Object.fromEntries(EMPLOYEES.map((e) => [e.code, true])),
-  );
+  const connectedCount = ADAPTERS.filter((a) => a.connected).length;
 
   return (
     <AppShell>
       <PageHeader
         eyebrow="設定"
         title="設定"
-        description="現在は Simulation Mode。実処理が存在しないため、完了を偽装せず SIMULATION と明示します。"
+        description="CEOプロファイルと外部連携アダプタの接続状況を確認します。"
         actions={<SimulationBadge />}
       />
 
       <div className="grid gap-4 lg:grid-cols-2">
         <Panel>
-          <SectionTitle title="シミュレーションモード" hint="API未接続でもUI動作を確認できます" />
+          <SectionTitle title="シミュレーションモード" hint="コード内の DEMO_MODE 定数で切り替えます" />
           <div className="flex items-center justify-between rounded-xl border border-border bg-secondary/25 p-4">
             <div>
               <p className="text-sm font-semibold">シミュレーションモード</p>
               <p className="mt-1 text-xs text-muted-foreground">
-                ON: AI社員の作業・Workflow・KPI更新をmock dataで再現します。
+                ON: AI社員のオフィスフロア演出（引き渡しアニメーション・活動ログ・売上ティッカー）をmock
+                dataで再現します。タスク・KPI・カレンダー等の実データ表示には影響しません。
               </p>
             </div>
-            <Switch
-              checked={simulation}
-              onCheckedChange={setSimulation}
-              aria-label="Simulation mode"
-            />
+            <span
+              className={cn(
+                "shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold",
+                DEMO_MODE
+                  ? "bg-[var(--warning)]/15 text-[var(--warning)]"
+                  : "bg-[var(--success)]/15 text-[var(--success)]",
+              )}
+            >
+              {DEMO_MODE ? "ON" : "OFF"}
+            </span>
           </div>
-          {!simulation ? (
-            <p className="mt-3 text-xs text-[var(--warning)]">
-              バックエンド未接続のため、OFFでは実データは取得されません。
-            </p>
-          ) : null}
         </Panel>
 
         <Panel>
@@ -92,45 +89,29 @@ function SettingsPage() {
           </dl>
         </Panel>
 
-        <Panel>
-          <SectionTitle title="AI社員" hint="有効化 / 無効化" />
-          <ul className="space-y-2">
-            {EMPLOYEES.map((e) => (
-              <li
-                key={e.code}
-                className="flex items-center justify-between rounded-xl border border-border bg-secondary/25 px-3 py-2.5"
-              >
-                <div className="flex items-center gap-3">
-                  <Tag tone={e.accent}>
-                    {e.code}｜{e.name}
-                  </Tag>
-                  <span className="text-xs text-muted-foreground">{e.department}</span>
-                </div>
-                <Switch
-                  checked={enabled[e.code] ?? false}
-                  onCheckedChange={(v) => setEnabled((s) => ({ ...s, [e.code]: v }))}
-                  aria-label={`Employee ${e.code}`}
-                />
-              </li>
-            ))}
-          </ul>
-        </Panel>
-
-        <Panel>
-          <SectionTitle title="外部連携アダプター" hint="Adapter architecture（未接続）" />
+        <Panel className="lg:col-span-2">
+          <SectionTitle
+            title="外部連携アダプター"
+            hint={`${connectedCount}/${ADAPTERS.length} 接続済み`}
+          />
           <div className="flex flex-wrap gap-2">
             {ADAPTERS.map((a) => (
               <span
-                key={a}
-                className="rounded-lg border border-dashed border-border px-3 py-1.5 text-xs text-muted-foreground"
+                key={a.name}
+                className={cn(
+                  "rounded-lg border px-3 py-1.5 text-xs",
+                  a.connected
+                    ? "border-[var(--success)]/40 bg-[var(--success)]/10 text-[var(--success)]"
+                    : "border-dashed border-border text-muted-foreground",
+                )}
               >
-                {a} · NOT CONNECTED
+                {a.name} · {a.connected ? "CONNECTED" : "NOT CONNECTED"}
               </span>
             ))}
           </div>
           <p className="mt-4 text-xs text-muted-foreground">
-            接続時は CEO → JARVIS → Planner → Agent Router → A-F → Tools → QA → JARVIS → CEO
-            の経路で実行されます。
+            未接続のアダプターは、接続後 CEO → JARVIS → Planner → Agent Router → A-F → Tools → QA
+            → JARVIS → CEO の経路で実行されます。
           </p>
         </Panel>
       </div>
