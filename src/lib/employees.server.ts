@@ -237,6 +237,18 @@ export async function onEmployeeChatError(code: EmployeeCode): Promise<void> {
     .eq("code", code);
   if (error)
     throw new Error(`AI社員状態の更新に失敗しました: ${error.message}`);
+
+  try {
+    const { createNotification } = await import("./notifications.server");
+    await createNotification({
+      kind: "employee_error",
+      title: "AI社員エラー",
+      body: `${code} — チャット処理でエラーが発生しました`,
+      relatedEmployeeCode: code,
+    });
+  } catch (notifyError) {
+    console.error("notification (employee error) failed:", notifyError);
+  }
 }
 
 /**
@@ -293,7 +305,8 @@ export async function listEmployeePerformance(): Promise<
     .from("tasks")
     .select("assignee, status, created_at, completed_at")
     .in("assignee", EMPLOYEE_CODES);
-  if (error) throw new Error(`タスク実績の取得に失敗しました: ${error.message}`);
+  if (error)
+    throw new Error(`タスク実績の取得に失敗しました: ${error.message}`);
 
   const rows = (data ?? []) as {
     assignee: EmployeeCode;

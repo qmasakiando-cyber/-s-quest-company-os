@@ -29,13 +29,14 @@ import {
   X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { NOTIFICATIONS, EMPLOYEES } from "@/lib/company-data";
+import { EMPLOYEES, formatLastActivity } from "@/lib/company-data";
 import { useAuth } from "@/lib/use-auth";
 import { useTasks } from "@/lib/use-tasks";
 import { useWorkflows } from "@/lib/use-workflows";
 import { useApprovals } from "@/lib/use-approvals";
 import { useEmployeeLiveStates } from "@/lib/use-employee-live-states";
-import { DemoDataBadge, SimulationBadge } from "./primitives";
+import { useNotifications } from "@/lib/use-notifications";
+import { SimulationBadge } from "./primitives";
 import {
   Command,
   CommandEmpty,
@@ -156,20 +157,21 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
 }
 
 function NotificationPanel() {
-  const unread = NOTIFICATIONS.filter((n) => n.unread).length;
+  const { notifications, unreadCount, error, markRead, markAllRead } =
+    useNotifications();
   const [open, setOpen] = useState(false);
 
   return (
     <div className="relative">
       <button
         onClick={() => setOpen((v) => !v)}
-        aria-label={`Notifications, ${unread} unread`}
+        aria-label={`Notifications, ${unreadCount} unread`}
         className="relative grid size-9 place-items-center rounded-lg border border-border transition-colors hover:bg-accent"
       >
         <Bell className="size-4" aria-hidden />
-        {unread > 0 ? (
+        {unreadCount > 0 ? (
           <span className="absolute -right-1 -top-1 grid size-4 place-items-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
-            {unread}
+            {unreadCount}
           </span>
         ) : null}
       </button>
@@ -177,23 +179,54 @@ function NotificationPanel() {
         <div className="panel absolute right-0 top-11 z-50 w-80 p-2">
           <div className="flex items-center justify-between gap-2 px-3 py-2">
             <p className="label-caps">通知センター</p>
-            <DemoDataBadge />
-          </div>
-          <ul className="max-h-80 space-y-1 overflow-y-auto">
-            {NOTIFICATIONS.map((n) => (
-              <li
-                key={n.title + n.at}
-                className="rounded-lg px-3 py-2 transition-colors hover:bg-accent"
+            {unreadCount > 0 ? (
+              <button
+                onClick={() => void markAllRead()}
+                className="text-[10px] font-semibold text-muted-foreground transition-colors hover:text-foreground"
               >
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-xs font-semibold">{n.title}</span>
-                  <span className="text-[10px] text-muted-foreground">
-                    {n.at}
-                  </span>
-                </div>
-                <p className="mt-0.5 text-xs text-muted-foreground">{n.body}</p>
+                すべて既読
+              </button>
+            ) : null}
+          </div>
+          {error ? (
+            <p className="px-3 py-2 text-xs text-destructive">{error}</p>
+          ) : null}
+          <ul className="max-h-80 space-y-1 overflow-y-auto">
+            {notifications.length === 0 ? (
+              <li className="px-3 py-6 text-center text-xs text-muted-foreground">
+                通知はありません
               </li>
-            ))}
+            ) : (
+              notifications.map((n) => (
+                <li key={n.id}>
+                  <button
+                    onClick={() => !n.readAt && void markRead(n.id)}
+                    className={cn(
+                      "w-full rounded-lg px-3 py-2 text-left transition-colors hover:bg-accent",
+                      !n.readAt && "bg-accent/40",
+                    )}
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="flex items-center gap-1.5 text-xs font-semibold">
+                        {!n.readAt ? (
+                          <span
+                            className="size-1.5 shrink-0 rounded-full bg-primary"
+                            aria-hidden
+                          />
+                        ) : null}
+                        {n.title}
+                      </span>
+                      <span className="shrink-0 text-[10px] text-muted-foreground">
+                        {formatLastActivity(n.createdAt)}
+                      </span>
+                    </div>
+                    <p className="mt-0.5 text-xs text-muted-foreground">
+                      {n.body}
+                    </p>
+                  </button>
+                </li>
+              ))
+            )}
           </ul>
         </div>
       ) : null}

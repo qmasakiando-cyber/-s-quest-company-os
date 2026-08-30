@@ -2199,51 +2199,6 @@ export const AUDIT_LOGS = [
   },
 ];
 
-export const NOTIFICATIONS = [
-  {
-    kind: "APPROVAL",
-    title: "承認が必要です",
-    body: "C — LP 公開申請",
-    at: "4分前",
-    unread: true,
-  },
-  {
-    kind: "QA",
-    title: "QA Issue",
-    body: "F — KPI データ不整合",
-    at: "6分前",
-    unread: true,
-  },
-  {
-    kind: "TASK",
-    title: "タスク割当",
-    body: "JARVIS → B: Revenue Gap 分析",
-    at: "40分前",
-    unread: true,
-  },
-  {
-    kind: "WORKFLOW",
-    title: "Workflow 実行中",
-    body: "WF-06 KPI → Strategy",
-    at: "42分前",
-    unread: false,
-  },
-  {
-    kind: "KPI",
-    title: "KPI アラート",
-    body: "Leads -17.9%（閾値超過）",
-    at: "1時間前",
-    unread: false,
-  },
-  {
-    kind: "REVENUE",
-    title: "売上更新",
-    body: "本日 ¥58,000 計上",
-    at: "2時間前",
-    unread: false,
-  },
-];
-
 export const QUICK_ACTIONS = [
   "KPIを分析",
   "タスクを作成",

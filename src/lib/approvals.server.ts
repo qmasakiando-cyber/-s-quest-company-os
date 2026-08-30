@@ -81,7 +81,21 @@ export async function createApproval(input: {
     .select()
     .single();
   if (error) throw new Error(`承認依頼の登録に失敗しました: ${error.message}`);
-  return rowToApproval(data as ApprovalRow);
+  const approval = rowToApproval(data as ApprovalRow);
+
+  try {
+    const { createNotification } = await import("./notifications.server");
+    await createNotification({
+      kind: "approval_pending",
+      title: "承認が必要です",
+      body: `${approval.requestedBy} — ${approval.title}`,
+      relatedApprovalId: approval.id,
+    });
+  } catch (notifyError) {
+    console.error("notification (approval pending) failed:", notifyError);
+  }
+
+  return approval;
 }
 
 /**
@@ -117,6 +131,18 @@ export async function decideApproval(input: {
     } catch (syncError) {
       console.error("task sync (approval decided) failed:", syncError);
     }
+  }
+
+  try {
+    const { createNotification } = await import("./notifications.server");
+    await createNotification({
+      kind: "approval_decided",
+      title: input.approved ? "承認されました" : "却下されました",
+      body: `${approval.requestedBy} — ${approval.title}`,
+      relatedApprovalId: approval.id,
+    });
+  } catch (notifyError) {
+    console.error("notification (approval decided) failed:", notifyError);
   }
 
   return approval;
