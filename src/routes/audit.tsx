@@ -8,7 +8,7 @@ import {
   Tag,
 } from "@/components/os/primitives";
 import { useAuditLogs } from "@/lib/use-audit";
-import { COMPANY_OS } from "@/lib/company-data";
+import { useCompanyOsEntries } from "@/lib/use-company-os";
 
 export const Route = createFileRoute("/audit")({
   head: () => ({
@@ -35,6 +35,10 @@ const actorTone = (actor: string) =>
 
 function AuditPage() {
   const { logs, loading, error } = useAuditLogs();
+  const { entries: osEntries } = useCompanyOsEntries();
+  const approvalGateRule = osEntries.find(
+    (e) => e.category === "RULES" && e.key === "Approval Gate",
+  );
 
   return (
     <AppShell>
@@ -98,7 +102,7 @@ function AuditPage() {
         <Panel className="h-fit">
           <SectionTitle title="承認ゲート規則" />
           <ul className="space-y-2 text-sm text-foreground/85">
-            {(COMPANY_OS.RULES[0]?.value ?? "").split(" / ").map((r) => (
+            {(approvalGateRule?.value ?? "").split(" / ").map((r) => (
               <li key={r} className="flex gap-2">
                 <span className="text-[var(--warning)]">•</span>
                 {r}

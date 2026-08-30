@@ -1792,16 +1792,6 @@ export const COMPANY_OS: Record<OsCategory, OsEntry[]> = {
       source: "WF-05",
       confidence: 95,
     },
-    {
-      key: "Monthly Goal",
-      value: "¥500,000",
-      version: "v1.1",
-      updatedBy: "CEO",
-      updatedAt: "2026-08-01",
-      status: "ACTIVE",
-      source: "CEO",
-      confidence: 100,
-    },
   ],
   AI: [
     {
@@ -1828,7 +1818,7 @@ export const COMPANY_OS: Record<OsCategory, OsEntry[]> = {
     },
     {
       key: "Logs",
-      value: "全操作を audit_logs に記録。保持365日。",
+      value: "全操作を audit_logs に記録。証跡として全件保持（自動削除なし）。",
       version: "v1.0",
       updatedBy: "F｜QA",
       updatedAt: "2026-08-26",
@@ -1907,44 +1897,6 @@ export const COMPANY_OS: Record<OsCategory, OsEntry[]> = {
     },
   ],
 };
-
-export const OS_VERSIONS = [
-  {
-    version: "v1.0",
-    date: "2026-08-26",
-    by: "B｜Strategy",
-    change: "Updated target audience",
-    category: "COMPANY",
-  },
-  {
-    version: "v0.9",
-    date: "2026-08-25",
-    by: "A｜Research",
-    change: "Added competitor scan to KNOWLEDGE",
-    category: "KNOWLEDGE",
-  },
-  {
-    version: "v0.8",
-    date: "2026-08-24",
-    by: "E｜Marketing",
-    change: "Updated funnel CV definitions",
-    category: "MARKETING",
-  },
-  {
-    version: "v0.7",
-    date: "2026-08-22",
-    by: "C｜Creative",
-    change: "Brand color tokens finalized",
-    category: "BRAND",
-  },
-  {
-    version: "v0.6",
-    date: "2026-08-21",
-    by: "C｜Creative",
-    change: "Diagnosis result logic to REVIEW",
-    category: "DIAGNOSIS",
-  },
-];
 
 export const PLANTS = [
   {
