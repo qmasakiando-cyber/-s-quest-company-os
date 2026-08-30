@@ -16,6 +16,13 @@ export const listErrorEmployeesFn = createServerFn({ method: "GET" })
     return listErrorEmployees();
   });
 
+export const listEmployeePerformanceFn = createServerFn({ method: "GET" })
+  .middleware([requireCeoAuthMiddleware])
+  .handler(async () => {
+    const { listEmployeePerformance } = await import("./employees.server");
+    return listEmployeePerformance();
+  });
+
 const retryEmployeeSchema = z.object({
   code: z.enum(["A", "B", "C", "D", "E", "F"]),
 });

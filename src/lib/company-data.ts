@@ -252,12 +252,6 @@ export interface AIEmployee {
   personaName?: string;
   persona?: string;
   pixelConfig?: PixelSpriteConfig;
-  performance: {
-    tasksCompleted: number;
-    successRate: number;
-    avgCompletion: string;
-    qaPassRate: number;
-  };
   permissions: { read: PermissionDomain[]; write: PermissionDomain[] };
   systemPrompt: string;
   activity: { at: string; text: string }[];
@@ -295,12 +289,6 @@ export const EMPLOYEES: AIEmployee[] = [
       "Structuring",
       "Reporting",
     ],
-    performance: {
-      tasksCompleted: 214,
-      successRate: 96.4,
-      avgCompletion: "18m",
-      qaPassRate: 94.1,
-    },
     permissions: {
       read: ["COMPANY", "BRAND", "PRODUCT", "MARKETING", "SALES"],
       write: ["KNOWLEDGE"],
@@ -341,12 +329,6 @@ export const EMPLOYEES: AIEmployee[] = [
       "Prioritization",
     ],
     steps: ["Framing", "Hypothesis", "Modeling", "Prioritizing", "Proposing"],
-    performance: {
-      tasksCompleted: 168,
-      successRate: 94.8,
-      avgCompletion: "26m",
-      qaPassRate: 96.2,
-    },
     permissions: {
       read: ["COMPANY", "KNOWLEDGE", "KPI", "SALES"],
       write: ["COMPANY", "PRODUCT", "SERVICE", "KPI"],
@@ -378,12 +360,6 @@ export const EMPLOYEES: AIEmployee[] = [
     ],
     capabilities: ["UX Flow", "Spec Writing", "Visual Direction", "Copy"],
     steps: ["Briefing", "Concepting", "Designing", "Speccing", "Handoff"],
-    performance: {
-      tasksCompleted: 141,
-      successRate: 92.1,
-      avgCompletion: "34m",
-      qaPassRate: 90.7,
-    },
     permissions: {
       read: ["BRAND", "PRODUCT", "COMPANY"],
       write: ["BRAND", "PRODUCT", "DIAGNOSIS"],
@@ -421,12 +397,6 @@ export const EMPLOYEES: AIEmployee[] = [
       "Proposing",
       "Forecasting",
     ],
-    performance: {
-      tasksCompleted: 122,
-      successRate: 91.5,
-      avgCompletion: "22m",
-      qaPassRate: 93.4,
-    },
     permissions: {
       read: ["COMPANY", "PRODUCT", "MARKETING"],
       write: ["SALES", "REVENUE"],
@@ -458,12 +428,6 @@ export const EMPLOYEES: AIEmployee[] = [
     ],
     capabilities: ["Funnel Analysis", "SEO", "Content Plan", "Ad Ops"],
     steps: ["Funnel read", "Ideation", "Producing", "Scheduling", "Measuring"],
-    performance: {
-      tasksCompleted: 197,
-      successRate: 93.7,
-      avgCompletion: "20m",
-      qaPassRate: 92.8,
-    },
     permissions: {
       read: ["BRAND", "PRODUCT", "SALES", "KPI"],
       write: ["MARKETING"],
@@ -500,12 +464,6 @@ export const EMPLOYEES: AIEmployee[] = [
       "Final Review",
     ],
     steps: ["Intake", "Fact check", "Logic check", "Risk scan", "Verdict"],
-    performance: {
-      tasksCompleted: 286,
-      successRate: 98.2,
-      avgCompletion: "11m",
-      qaPassRate: 99.1,
-    },
     permissions: {
       read: [...PERMISSION_DOMAINS],
       write: ["RULES", "WORKFLOW", "PRODUCT"],

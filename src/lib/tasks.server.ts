@@ -140,7 +140,13 @@ export async function setTaskStatus(input: {
   const supabase = await getSupabaseServerClient();
   const { data, error } = await supabase
     .from("tasks")
-    .update({ status: input.status })
+    .update({
+      status: input.status,
+      // DONEへの遷移時に完了時刻を記録し、DONEから戻された場合はクリアする
+      // （/employees のパフォーマンス集計 = listEmployeePerformance() が
+      // avg(completed_at - created_at) で平均完了時間を算出するために使う）。
+      completed_at: input.status === "DONE" ? new Date().toISOString() : null,
+    })
     .eq("id", input.id)
     .select("id, title, assignee")
     .single();

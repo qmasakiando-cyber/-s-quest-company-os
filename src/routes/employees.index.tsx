@@ -12,6 +12,7 @@ import {
   formatLastActivity,
 } from "@/lib/company-data";
 import { useEmployeeLiveStates } from "@/lib/use-employee-live-states";
+import { useEmployeePerformance } from "@/lib/use-employee-performance";
 
 export const Route = createFileRoute("/employees/")({
   head: () => ({
@@ -38,6 +39,7 @@ function EmployeesPage() {
   // Supabase の ai_employees から読み込む（表示のみ、書き込みなし）
   const { states: liveStates, error: liveStatesError } =
     useEmployeeLiveStates();
+  const { performance } = useEmployeePerformance();
 
   return (
     <AppShell>
@@ -80,7 +82,6 @@ function EmployeesPage() {
                 "Role",
                 "タスク",
                 "Success",
-                "QA Pass",
                 "WRITE Scope",
               ].map((h) => (
                 <th key={h} className="label-caps px-4 py-3">
@@ -90,31 +91,31 @@ function EmployeesPage() {
             </tr>
           </thead>
           <tbody>
-            {EMPLOYEES.map((e) => (
-              <tr
-                key={e.code}
-                className="border-b border-border/60 last:border-0"
-              >
-                <td className="px-4 py-3">
-                  <Tag tone={e.accent}>
-                    {e.code}｜{e.name}
-                  </Tag>
-                </td>
-                <td className="px-4 py-3 text-muted-foreground">{e.role}</td>
-                <td className="num-display px-4 py-3">
-                  {e.performance.tasksCompleted}
-                </td>
-                <td className="num-display px-4 py-3">
-                  {e.performance.successRate}%
-                </td>
-                <td className="num-display px-4 py-3">
-                  {e.performance.qaPassRate}%
-                </td>
-                <td className="px-4 py-3 text-xs text-muted-foreground">
-                  {e.permissions.write.join(" / ")}
-                </td>
-              </tr>
-            ))}
+            {EMPLOYEES.map((e) => {
+              const perf = performance[e.code];
+              return (
+                <tr
+                  key={e.code}
+                  className="border-b border-border/60 last:border-0"
+                >
+                  <td className="px-4 py-3">
+                    <Tag tone={e.accent}>
+                      {e.code}｜{e.name}
+                    </Tag>
+                  </td>
+                  <td className="px-4 py-3 text-muted-foreground">{e.role}</td>
+                  <td className="num-display px-4 py-3">
+                    {perf ? perf.tasksCompleted : "—"}
+                  </td>
+                  <td className="num-display px-4 py-3">
+                    {perf?.successRate != null ? `${perf.successRate}%` : "—"}
+                  </td>
+                  <td className="px-4 py-3 text-xs text-muted-foreground">
+                    {e.permissions.write.join(" / ")}
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </Panel>

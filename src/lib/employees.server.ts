@@ -1,6 +1,8 @@
 // DELETE禁止ルール：物理削除は行わない（詳細は supabase.server.ts 参照）。
 import { getSupabaseServerClient } from "./supabase.server";
-import type { EmployeeCode, EmployeeStatus } from "./company-data";
+import type { EmployeeCode, EmployeeStatus, TaskStatus } from "./company-data";
+
+const EMPLOYEE_CODES: EmployeeCode[] = ["A", "B", "C", "D", "E", "F"];
 
 export interface EmployeeLiveState {
   code: EmployeeCode;
@@ -256,4 +258,80 @@ export async function retryEmployee(code: EmployeeCode): Promise<void> {
     .eq("code", code);
   if (error)
     throw new Error(`AI社員状態の更新に失敗しました: ${error.message}`);
+}
+
+export interface EmployeePerformance {
+  code: EmployeeCode;
+  /** assigneeがそのAI社員で status = DONE のタスク件数。 */
+  tasksCompleted: number;
+  /** DONE / (DONE + BLOCKED) の百分率。DONEもBLOCKEDもまだ無ければ未計測（null）。 */
+  successRate: number | null;
+  /** completed_at - created_at の平均を "18m" / "1h 30m" 形式にした文字列。DONEにcompleted_atが無ければ未計測（null）。 */
+  avgCompletion: string | null;
+}
+
+function formatDurationMinutes(totalMinutes: number): string {
+  const m = Math.round(totalMinutes);
+  if (m < 60) return `${m}m`;
+  const h = Math.floor(m / 60);
+  const rem = m % 60;
+  return `${h}h ${rem}m`;
+}
+
+/**
+ * Read-only: tasks_completed / success_rate / avg_completion を、ai_employees
+ * にキャッシュされた列ではなく tasks から都度集計して返す（表示ズレを防ぐ
+ * ため、書き込み・保存はしない。migration_007でai_employees側の同名列は
+ * 廃止済み）。QA合否に相当する実測データは今のスキーマに存在しないため、
+ * ここでは扱わない（/employees側でQA Pass列自体を削除する）。
+ */
+export async function listEmployeePerformance(): Promise<
+  EmployeePerformance[]
+> {
+  const supabase = await getSupabaseServerClient();
+  const { data, error } = await supabase
+    .from("tasks")
+    .select("assignee, status, created_at, completed_at")
+    .in("assignee", EMPLOYEE_CODES);
+  if (error) throw new Error(`タスク実績の取得に失敗しました: ${error.message}`);
+
+  const rows = (data ?? []) as {
+    assignee: EmployeeCode;
+    status: TaskStatus;
+    created_at: string;
+    completed_at: string | null;
+  }[];
+
+  return EMPLOYEE_CODES.map((code) => {
+    const own = rows.filter((r) => r.assignee === code);
+    const done = own.filter((r) => r.status === "DONE");
+    const blocked = own.filter((r) => r.status === "BLOCKED");
+    const settled = done.length + blocked.length;
+    const successRate = settled > 0 ? (done.length / settled) * 100 : null;
+
+    const durationsMinutes = done
+      .filter((r) => r.completed_at)
+      .map(
+        (r) =>
+          (new Date(r.completed_at as string).getTime() -
+            new Date(r.created_at).getTime()) /
+          60_000,
+      )
+      .filter((m) => m >= 0);
+    const avgCompletion =
+      durationsMinutes.length > 0
+        ? formatDurationMinutes(
+            durationsMinutes.reduce((a, b) => a + b, 0) /
+              durationsMinutes.length,
+          )
+        : null;
+
+    return {
+      code,
+      tasksCompleted: done.length,
+      successRate:
+        successRate !== null ? Math.round(successRate * 10) / 10 : null,
+      avgCompletion,
+    };
+  });
 }

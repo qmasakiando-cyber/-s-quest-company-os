@@ -15,6 +15,7 @@ import {
 import { AI_EMPLOYEES, EMPLOYEES, employeeByCode, type EmployeeStatus } from "@/lib/company-data";
 import { useTasks } from "@/lib/use-tasks";
 import { listEmployeeLiveStatesFn } from "@/lib/employees.functions";
+import { useEmployeePerformance } from "@/lib/use-employee-performance";
 
 export const Route = createFileRoute("/employees/$code")({
   loader: ({ params }) => {
@@ -70,6 +71,8 @@ function EmployeeDetail() {
   const tone = e.accent;
   const { tasks: allTasks } = useTasks();
   const tasks = allTasks.filter((t) => t.assignee === e.code);
+  const { performance } = useEmployeePerformance();
+  const perf = performance[e.code];
   const [chatStatus, setChatStatus] = useState<"working" | "idle">("idle");
 
   // 稼働状況（status・progress）は Supabase の ai_employees から読み込む（表示のみ、書き込みなし）
@@ -265,10 +268,12 @@ function EmployeeDetail() {
             <SectionTitle title="パフォーマンス" />
             <dl className="space-y-3 text-sm">
               {[
-                ["完了タスク", String(e.performance.tasksCompleted)],
-                ["成功率", `${e.performance.successRate}%`],
-                ["平均処理時間", e.performance.avgCompletion],
-                ["QAパス率", `${e.performance.qaPassRate}%`],
+                ["完了タスク", perf ? String(perf.tasksCompleted) : "—"],
+                [
+                  "成功率",
+                  perf?.successRate != null ? `${perf.successRate}%` : "—",
+                ],
+                ["平均処理時間", perf?.avgCompletion ?? "—"],
                 ["本日完了", String(e.completedToday)],
               ].map(([k, v]) => (
                 <div key={k} className="flex items-center justify-between">
