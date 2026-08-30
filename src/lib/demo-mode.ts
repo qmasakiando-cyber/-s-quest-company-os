@@ -19,12 +19,14 @@ import { useEffect, useRef, useState } from "react";
 import {
   ACTIVITY,
   EMPLOYEES,
-  REVENUE,
   type EmployeeCode,
   type EmployeeStatus,
 } from "./company-data";
 
 export const DEMO_MODE = true;
+
+/** 演出用ティッカーの初期シード値。実データ（revenue_entries）とは無関係。 */
+const DEMO_REVENUE_TICKER_SEED = 12000;
 
 export type QuestState =
   "IDLE" | "THINKING" | "ORCHESTRATING" | "COMMUNICATING" | "ERROR";
@@ -153,7 +155,7 @@ export function useCompanySimulation(enabled: boolean = DEMO_MODE) {
     "WF-06 を実行中。A / B / D に作業を配分しています。",
   );
   const [revenueToday, setRevenueToday] = useState<number>(
-    Math.round(REVENUE.monthly / 26),
+    DEMO_REVENUE_TICKER_SEED,
   );
   const seq = useRef(0);
 

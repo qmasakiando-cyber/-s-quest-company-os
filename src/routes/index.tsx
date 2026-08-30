@@ -20,6 +20,7 @@ import { useKpis } from "@/lib/use-kpis";
 import { useEmployeeLiveStates } from "@/lib/use-employee-live-states";
 import { useApprovals } from "@/lib/use-approvals";
 import { useCompanyHealth } from "@/lib/use-company-health";
+import { useRevenue } from "@/lib/use-revenue";
 import type { EventKind, EventOwner } from "@/lib/calendar.server";
 import {
   ALERTS,
@@ -29,7 +30,6 @@ import {
   EMPLOYEES,
   NO_CURRENT_TASK_LABEL,
   QUICK_ACTIONS,
-  REVENUE,
   computeCompanyStatus,
   formatLastActivity,
   type Approval,
@@ -80,7 +80,8 @@ function useNowLabel() {
       minute: "2-digit",
       hour12: false,
     }).formatToParts(now);
-    const get = (type: string) => parts.find((p) => p.type === type)?.value ?? "";
+    const get = (type: string) =>
+      parts.find((p) => p.type === type)?.value ?? "";
     return `${get("year")}年${get("month")}月${get("day")}日（${get("weekday")}）${get("hour")}:${get("minute")} JST`;
   }, [now]);
 }
@@ -99,7 +100,8 @@ function HqPage() {
   // AIオフィスフロア：status/progress/currentTask/completedToday/lastActivity
   // は ai_employees の実データで上書きする（体の微アニメーション・引き渡し演出・
   // 売上ティッカーは sim 側の演出のまま）。COMPANY STATUS バッジも同じ実データから算出。
-  const { states: liveStates, error: liveStatesError } = useEmployeeLiveStates();
+  const { states: liveStates, error: liveStatesError } =
+    useEmployeeLiveStates();
   useEffect(() => {
     setSimEmployees((prev) =>
       prev.map((emp) => {
@@ -170,7 +172,11 @@ function HqPage() {
       ),
     [KPIS],
   );
-  const revenuePct = Math.round((REVENUE.monthly / REVENUE.goal) * 100);
+  const { monthlyTotal: monthlyRevenue, goal: revenueGoal } = useRevenue();
+  const revenuePct =
+    revenueGoal && revenueGoal > 0
+      ? Math.round((monthlyRevenue / revenueGoal) * 100)
+      : 0;
 
   // ── CEOの確認が必要（実データの承認依頼 + 静的なWARNING/CRITICALアラート） ──
   const { approvals: allApprovals, decide: decideApproval } = useApprovals();
@@ -624,7 +630,7 @@ function HqPage() {
         <div className="space-y-4">
           <Panel>
             <p className="label-caps">売上</p>
-            <p className="num-display mt-2 text-3xl">{jpy(REVENUE.monthly)}</p>
+            <p className="num-display mt-2 text-3xl">{jpy(monthlyRevenue)}</p>
             <div className="mt-1 flex items-center justify-between text-xs text-muted-foreground">
               <span>本日売上 {jpy(sim.revenueToday)}</span>
               <Link to="/revenue" className="hover:text-foreground">

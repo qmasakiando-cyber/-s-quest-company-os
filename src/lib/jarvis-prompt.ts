@@ -10,7 +10,7 @@
  * ブロックという構成にすることで、アイデンティティ部分が2箇所で食い違う
  * リスクを避けている。
  */
-import { EMPLOYEES, NO_CURRENT_TASK_LABEL, REVENUE, jpy } from "./company-data";
+import { EMPLOYEES, NO_CURRENT_TASK_LABEL, jpy } from "./company-data";
 
 export type JarvisMode = "instruction" | "consultation";
 
@@ -233,17 +233,25 @@ export const JARVIS_SYSTEM_PROMPT = buildJarvisSystemPrompt("instruction");
 
 /**
  * CEO・AI社員に渡す「今の会社の状況」スナップショット。AI社員・KPI・タスク・
- * ワークフローはSupabaseの実データから組み立てる（売上のみ、/revenue自体が
- * まだSupabase化されていないためモック値のまま — その旨を本文にも明記する）。
+ * ワークフロー・売上はすべてSupabaseの実データから組み立てる。
  */
 export async function buildCompanyContext(): Promise<string> {
-  const [liveStates, kpis, tasks, workflows] = await Promise.all([
-    (async () =>
-      (await import("./employees.server")).listEmployeeLiveStates())(),
-    (async () => (await import("./kpi.server")).listKpis())(),
-    (async () => (await import("./tasks.server")).listTasks())(),
-    (async () => (await import("./workflows.server")).listWorkflows())(),
-  ]);
+  const [liveStates, kpis, tasks, workflows, revenueEntries, revenueGoal] =
+    await Promise.all([
+      (async () =>
+        (await import("./employees.server")).listEmployeeLiveStates())(),
+      (async () => (await import("./kpi.server")).listKpis())(),
+      (async () => (await import("./tasks.server")).listTasks())(),
+      (async () => (await import("./workflows.server")).listWorkflows())(),
+      (async () => (await import("./revenue.server")).listRevenueEntries())(),
+      (async () =>
+        (await import("./kpi.server")).getKpiTargetValue("monthly_revenue"))(),
+    ]);
+
+  const currentMonthKey = new Date().toISOString().slice(0, 7);
+  const monthlyRevenue = revenueEntries
+    .filter((e) => e.transactionDate.slice(0, 7) === currentMonthKey)
+    .reduce((sum, e) => sum + e.amount, 0);
 
   const liveByCode = new Map(liveStates.map((s) => [s.code, s]));
   const emp = EMPLOYEES.map((e) => {
@@ -267,8 +275,8 @@ export async function buildCompanyContext(): Promise<string> {
     .join("\n");
   const wf = workflows.map((w) => `${w.code} ${w.name}`).join(" / ");
 
-  return `# 現在のCOMPANY OSスナップショット（AI社員・KPI・タスク・ワークフローは実データ）
-月次売上: ${jpy(REVENUE.monthly)}（目標 ${jpy(REVENUE.goal)}） ※売上はまだSupabase化されていないためモック値
+  return `# 現在のCOMPANY OSスナップショット（すべて実データ）
+月次売上: ${jpy(monthlyRevenue)}${revenueGoal ? `（目標 ${jpy(revenueGoal)}）` : ""}
 
 ## AI社員
 ${emp}

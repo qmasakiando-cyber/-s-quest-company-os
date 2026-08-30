@@ -905,56 +905,58 @@ export const DASHBOARD_KPI_NAMES = [
   "Tasks Completed",
 ];
 
-export const REVENUE = {
-  total: 2148000,
-  monthly: 328000,
-  goal: 500000,
-  mrr: 84000,
-  arr: 1008000,
-  affiliate: 62000,
-  career: 118000,
-  b2b: 132000,
-  other: 16000,
-  expenses: 131600,
-  profit: 196400,
-};
+/**
+ * 売上台帳（JARVIS直轄）。カテゴリはexpensesと同じ考え方で固定enumにしない
+ * （Supabase側もtext列）。ここにあるのは旧/revenueページの売上構成
+ * （Affiliate/Career/B2B/Other）を踏襲したプリセットで、UIでは選択肢＋
+ * 「その他」で自由入力を許す。
+ */
+export const REVENUE_CATEGORIES = [
+  "Affiliate",
+  "Career",
+  "B2B",
+  "Other",
+] as const;
 
-export const REVENUE_SERIES: Record<
-  string,
-  { label: string; revenue: number; expenses: number; profit: number }[]
-> = {
-  "7D": [
-    { label: "Aug 20", revenue: 38000, expenses: 15200, profit: 22800 },
-    { label: "Aug 21", revenue: 42000, expenses: 16100, profit: 25900 },
-    { label: "Aug 22", revenue: 36000, expenses: 14800, profit: 21200 },
-    { label: "Aug 23", revenue: 51000, expenses: 18300, profit: 32700 },
-    { label: "Aug 24", revenue: 47000, expenses: 17400, profit: 29600 },
-    { label: "Aug 25", revenue: 56000, expenses: 19800, profit: 36200 },
-    { label: "Aug 26", revenue: 58000, expenses: 20000, profit: 38000 },
-  ],
-  "30D": [
-    { label: "W1", revenue: 62000, expenses: 28000, profit: 34000 },
-    { label: "W2", revenue: 78000, expenses: 31000, profit: 47000 },
-    { label: "W3", revenue: 92000, expenses: 34600, profit: 57400 },
-    { label: "W4", revenue: 96000, expenses: 38000, profit: 58000 },
-  ],
-  "90D": [
-    { label: "Jun", revenue: 184000, expenses: 92000, profit: 92000 },
-    { label: "Jul", revenue: 277000, expenses: 115000, profit: 162000 },
-    { label: "Aug", revenue: 328000, expenses: 131600, profit: 196400 },
-  ],
-  "1Y": [
-    { label: "Q3 25", revenue: 210000, expenses: 140000, profit: 70000 },
-    { label: "Q4 25", revenue: 388000, expenses: 201000, profit: 187000 },
-    { label: "Q1 26", revenue: 512000, expenses: 244000, profit: 268000 },
-    { label: "Q2 26", revenue: 649000, expenses: 281000, profit: 368000 },
-    { label: "Q3 26", revenue: 789000, expenses: 338600, profit: 450400 },
-  ],
-  All: [
-    { label: "2025", revenue: 598000, expenses: 341000, profit: 257000 },
-    { label: "2026", revenue: 1550000, expenses: 863600, profit: 686400 },
-  ],
-};
+export interface RevenueEntry {
+  id: string;
+  category: string;
+  amount: number;
+  transactionDate: string;
+  memo: string | null;
+  createdAt: string;
+}
+
+/** "2026-08-26" -> "2026-08"（expenseMonthKeyと同じ変換）。 */
+export const revenueMonthKey = (transactionDate: string) =>
+  transactionDate.slice(0, 7);
+
+/** 月ごとの合計（古い月→新しい月の順）。 */
+export function summarizeRevenueByMonth(
+  entries: RevenueEntry[],
+): { month: string; total: number }[] {
+  const totals = new Map<string, number>();
+  for (const e of entries) {
+    const key = revenueMonthKey(e.transactionDate);
+    totals.set(key, (totals.get(key) ?? 0) + e.amount);
+  }
+  return [...totals.entries()]
+    .sort(([a], [b]) => (a < b ? -1 : 1))
+    .map(([month, total]) => ({ month, total }));
+}
+
+/** カテゴリごとの合計（金額の大きい順）。 */
+export function summarizeRevenueByCategory(
+  entries: RevenueEntry[],
+): { category: string; total: number }[] {
+  const totals = new Map<string, number>();
+  for (const e of entries) {
+    totals.set(e.category, (totals.get(e.category) ?? 0) + e.amount);
+  }
+  return [...totals.entries()]
+    .sort(([, a], [, b]) => b - a)
+    .map(([category, total]) => ({ category, total }));
+}
 
 /**
  * 経費台帳（JARVIS直轄）。カテゴリは固定enumにせず自由入力（Supabase側もtext列）。

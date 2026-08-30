@@ -20,12 +20,12 @@ import {
 import { useTasks } from "@/lib/use-tasks";
 import { useKpis } from "@/lib/use-kpis";
 import { useEmployeeLiveStates } from "@/lib/use-employee-live-states";
+import { useRevenue } from "@/lib/use-revenue";
 import {
   ACTIVITY,
   EMPLOYEES,
   JARVIS_EXAMPLES,
   QUICK_ACTIONS,
-  REVENUE,
   empColor,
   jpy,
   type EmployeeCode,
@@ -94,6 +94,7 @@ function JarvisPage() {
   const confirmTask = useServerFn(confirmJarvisTaskFn);
   const { tasks } = useTasks();
   const { kpis } = useKpis();
+  const { monthlyTotal: monthlyRevenue, goal: revenueGoal } = useRevenue();
   const { states: liveStates } = useEmployeeLiveStates();
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -547,10 +548,14 @@ function JarvisPage() {
             <dl className="space-y-3 text-sm">
               <div className="flex items-center justify-between">
                 <dt className="text-muted-foreground">Monthly Revenue</dt>
-                <dd className="num-display">{jpy(REVENUE.monthly)}</dd>
+                <dd className="num-display">{jpy(monthlyRevenue)}</dd>
               </div>
               <Meter
-                value={Math.round((REVENUE.monthly / REVENUE.goal) * 100)}
+                value={
+                  revenueGoal && revenueGoal > 0
+                    ? Math.round((monthlyRevenue / revenueGoal) * 100)
+                    : 0
+                }
                 label="Goal"
               />
               {kpis.slice(3, 8).map((k) => (

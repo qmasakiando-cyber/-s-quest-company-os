@@ -94,3 +94,36 @@ export async function listKpis(): Promise<Kpi[]> {
     };
   });
 }
+
+/**
+ * Read-only: 生の目標値（表示用に整形しない数値）を単一のKPIコードから取得する。
+ * listKpis()と同じ「最新kpi_valuesのtarget_value優先、無ければkpis.target_value」
+ * のフォールバック順を使う。/revenue の月間目標カード（"monthly_revenue"）向け。
+ */
+export async function getKpiTargetValue(code: string): Promise<number | null> {
+  const supabase = await getSupabaseServerClient();
+  const { data: kpiRow, error: kpiError } = await supabase
+    .from("kpis")
+    .select("id, target_value")
+    .eq("code", code)
+    .maybeSingle();
+  if (kpiError)
+    throw new Error(`KPI目標値の取得に失敗しました: ${kpiError.message}`);
+  if (!kpiRow) return null;
+
+  const { data: latestValue, error: valueError } = await supabase
+    .from("kpi_values")
+    .select("target_value")
+    .eq("kpi_id", (kpiRow as { id: string }).id)
+    .order("period_start", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (valueError)
+    throw new Error(`KPI目標値の取得に失敗しました: ${valueError.message}`);
+
+  return (
+    (latestValue as { target_value: number | null } | null)?.target_value ??
+    (kpiRow as { target_value: number | null }).target_value ??
+    null
+  );
+}
