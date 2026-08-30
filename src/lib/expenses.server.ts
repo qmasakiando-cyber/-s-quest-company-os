@@ -1,6 +1,6 @@
 // DELETE禁止ルール：物理削除は行わない（詳細は supabase.server.ts 参照）。
 import { getSupabaseServerClient } from "./supabase.server";
-import type { Expense } from "./company-data";
+import { jpy, type Expense } from "./company-data";
 
 interface ExpenseRow {
   id: string;
@@ -56,5 +56,18 @@ export async function createExpense(input: {
     .select()
     .single();
   if (error) throw new Error(`経費の登録に失敗しました: ${error.message}`);
-  return rowToExpense(data as ExpenseRow);
+  const expense = rowToExpense(data as ExpenseRow);
+
+  try {
+    const { createAuditLog } = await import("./audit.server");
+    await createAuditLog({
+      actor: "CEO",
+      action: "Logged Expense",
+      target: `${expense.category} ${jpy(expense.amount)}`,
+    });
+  } catch (auditError) {
+    console.error("audit log (expense logged) failed:", auditError);
+  }
+
+  return expense;
 }

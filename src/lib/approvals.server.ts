@@ -95,6 +95,18 @@ export async function createApproval(input: {
     console.error("notification (approval pending) failed:", notifyError);
   }
 
+  try {
+    const { createAuditLog } = await import("./audit.server");
+    await createAuditLog({
+      actor: "JARVIS",
+      action: "Requested Approval",
+      target: approval.title,
+      relatedApprovalId: approval.id,
+    });
+  } catch (auditError) {
+    console.error("audit log (approval requested) failed:", auditError);
+  }
+
   return approval;
 }
 
@@ -143,6 +155,18 @@ export async function decideApproval(input: {
     });
   } catch (notifyError) {
     console.error("notification (approval decided) failed:", notifyError);
+  }
+
+  try {
+    const { createAuditLog } = await import("./audit.server");
+    await createAuditLog({
+      actor: "CEO",
+      action: input.approved ? "Approved" : "Rejected",
+      target: approval.title,
+      relatedApprovalId: approval.id,
+    });
+  } catch (auditError) {
+    console.error("audit log (approval decided) failed:", auditError);
   }
 
   return approval;

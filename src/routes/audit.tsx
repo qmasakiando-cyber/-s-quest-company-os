@@ -1,7 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { AppShell } from "@/components/os/AppShell";
-import { DemoDataBadge, PageHeader, Panel, SectionTitle, Tag } from "@/components/os/primitives";
-import { AUDIT_LOGS, COMPANY_OS } from "@/lib/company-data";
+import {
+  EmptyState,
+  PageHeader,
+  Panel,
+  SectionTitle,
+  Tag,
+} from "@/components/os/primitives";
+import { useAuditLogs } from "@/lib/use-audit";
+import { COMPANY_OS } from "@/lib/company-data";
 
 export const Route = createFileRoute("/audit")({
   head: () => ({
@@ -9,64 +16,83 @@ export const Route = createFileRoute("/audit")({
       { title: "Audit Log — S-QUEST COMPANY" },
       {
         name: "description",
-        content: "全ての重要操作の Timestamp / Actor / Action / Target / Status / Approval を記録する監査ログ。",
+        content:
+          "全ての重要操作の Timestamp / Actor / Action / Target を記録する監査ログ。",
       },
       { property: "og:title", content: "Audit Log — S-QUEST COMPANY" },
       {
         property: "og:description",
-        content: "AI社員の操作はすべて記録され、承認ゲートの通過履歴も残ります。",
+        content:
+          "承認申請/決定・タスク作成/ステータス変更・経費/売上の記帳をすべて記録します。",
       },
     ],
   }),
   component: AuditPage,
 });
 
-const statusTone = (s: string) =>
-  s === "SUCCESS"
-    ? "var(--success)"
-    : s === "PENDING"
-      ? "var(--warning)"
-      : s === "RUNNING"
-        ? "var(--primary)"
-        : "var(--destructive)";
+const actorTone = (actor: string) =>
+  actor === "JARVIS" ? "var(--primary)" : "var(--emp-d)";
 
 function AuditPage() {
+  const { logs, loading, error } = useAuditLogs();
+
   return (
     <AppShell>
       <PageHeader
         eyebrow="ガバナンス"
         title="監査ログ"
         description="AI社員にCEO権限はありません。外部公開・送信・支払い・契約・削除・本番変更は承認ゲートを通過します。"
-        actions={<DemoDataBadge />}
       />
+
+      {error ? (
+        <p className="mb-4 text-xs text-destructive">⚠️ {error}</p>
+      ) : null}
 
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_300px]">
         <Panel className="overflow-x-auto p-0">
-          <table className="w-full min-w-[760px] text-sm">
-            <thead>
-              <tr className="border-b border-border text-left">
-                {["Timestamp", "Actor", "Action", "Target", "Status", "Approval"].map((h) => (
-                  <th key={h} className="label-caps px-4 py-3">
-                    {h}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {AUDIT_LOGS.map((l) => (
-                <tr key={l.at + l.action} className="border-b border-border/60 last:border-0">
-                  <td className="num-display px-4 py-3 text-xs text-muted-foreground">{l.at}</td>
-                  <td className="px-4 py-3">{l.actor}</td>
-                  <td className="px-4 py-3">{l.action}</td>
-                  <td className="px-4 py-3 text-muted-foreground">{l.target}</td>
-                  <td className="px-4 py-3">
-                    <Tag tone={statusTone(l.status)}>{l.status}</Tag>
-                  </td>
-                  <td className="px-4 py-3 text-xs text-muted-foreground">{l.approval}</td>
+          {loading && !logs.length ? (
+            <p className="p-5 text-sm text-muted-foreground">
+              読み込んでいます…
+            </p>
+          ) : logs.length ? (
+            <table className="w-full min-w-[640px] text-sm">
+              <thead>
+                <tr className="border-b border-border text-left">
+                  {["Timestamp", "Actor", "Action", "Target"].map((h) => (
+                    <th key={h} className="label-caps px-4 py-3">
+                      {h}
+                    </th>
+                  ))}
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {logs.map((l) => (
+                  <tr
+                    key={l.id}
+                    className="border-b border-border/60 last:border-0"
+                  >
+                    <td className="num-display px-4 py-3 text-xs text-muted-foreground">
+                      {l.createdAt.replace("T", " ").slice(0, 16)}
+                    </td>
+                    <td className="px-4 py-3">
+                      <Tag tone={actorTone(l.actor)}>{l.actor}</Tag>
+                    </td>
+                    <td className="px-4 py-3">{l.action}</td>
+                    <td className="px-4 py-3 text-muted-foreground">
+                      {l.target}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : (
+            <div className="p-5">
+              <EmptyState
+                title="記録がありません"
+                body="タスクの作成・承認の申請/決定・経費/売上の記帳を行うと、ここに記録されます。"
+              />
+            </div>
+          )}
         </Panel>
 
         <Panel className="h-fit">
@@ -80,7 +106,7 @@ function AuditPage() {
             ))}
           </ul>
           <p className="mt-4 text-xs text-muted-foreground">
-            ログ保持期間 365日 · 監査担当 F｜QA
+            監査担当 F｜QA · 記録は削除されません（証跡として全件保持）
           </p>
         </Panel>
       </div>

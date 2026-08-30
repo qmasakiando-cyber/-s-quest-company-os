@@ -125,6 +125,19 @@ export async function createTask(input: {
       } catch (syncError) {
         console.error("employee status sync (task created) failed:", syncError);
       }
+
+      try {
+        const { createAuditLog } = await import("./audit.server");
+        await createAuditLog({
+          actor: fromJarvis ? "JARVIS" : "CEO",
+          action: "Created Task",
+          target: `${task.id} ${task.title}`,
+          relatedTaskId: task.id,
+        });
+      } catch (auditError) {
+        console.error("audit log (task created) failed:", auditError);
+      }
+
       return task;
     }
     if (error.code !== "23505")
@@ -157,6 +170,19 @@ export async function setTaskStatus(input: {
     title: string;
     assignee: EmployeeCode | "JARVIS" | "CEO";
   };
+
+  try {
+    const { createAuditLog } = await import("./audit.server");
+    await createAuditLog({
+      actor: "CEO",
+      action: "Updated Task Status",
+      target: `${task.id} ${task.title} → ${input.status}`,
+      relatedTaskId: task.id,
+    });
+  } catch (auditError) {
+    console.error("audit log (task status changed) failed:", auditError);
+  }
+
   if (task.assignee === "JARVIS" || task.assignee === "CEO") return;
 
   // AI社員の状態を連動更新する。失敗してもタスク更新自体は成功として返す。
