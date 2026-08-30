@@ -82,6 +82,7 @@ export async function listKpis(): Promise<Kpi[]> {
       current?.target_value ?? kpi.target_value ?? currentValue;
 
     return {
+      code: kpi.code,
       name: kpi.name,
       category: kpi.category,
       value: formatByUnit(currentValue, kpi.unit),
@@ -126,4 +127,73 @@ export async function getKpiTargetValue(code: string): Promise<number | null> {
     (kpiRow as { target_value: number | null }).target_value ??
     null
   );
+}
+
+/**
+ * JARVISのupdate_kpi_targetから、CEOが実行ボタンで確定した時にだけ呼ばれる。
+ * kpis.target_value を上書きするだけでなく、kpi_values に「今日・目標値のみ変更・
+ * 実測値は直前と同じ」の新しい行を追記する。理由：getKpiTargetValue()/listKpis()は
+ * 最新のkpi_values.target_valueを優先して読むため、kpis.target_valueだけ書き換えても
+ * 既存のkpi_values行（seed-calendar-kpi.tsで全トレンドポイントに同じtarget_valueが
+ * 入っている）に上書きされて表示に反映されない。expenses/revenue_entries/audit_logsと
+ * 同じ「上書きせず追記する」台帳哲学に合わせ、目標変更の履歴も自然に残す。
+ */
+export async function updateKpiTarget(input: {
+  code: string;
+  targetValue: number;
+}): Promise<void> {
+  const supabase = await getSupabaseServerClient();
+  const { data: kpiRow, error: kpiError } = await supabase
+    .from("kpis")
+    .select("id, name, target_value")
+    .eq("code", input.code)
+    .single();
+  if (kpiError) throw new Error(`KPIの取得に失敗しました: ${kpiError.message}`);
+  const kpi = kpiRow as {
+    id: string;
+    name: string;
+    target_value: number | null;
+  };
+
+  const { data: latestValue, error: valueError } = await supabase
+    .from("kpi_values")
+    .select("value")
+    .eq("kpi_id", kpi.id)
+    .order("period_start", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (valueError)
+    throw new Error(`KPI実績の取得に失敗しました: ${valueError.message}`);
+  const carriedValue = (latestValue as { value: number } | null)?.value ?? 0;
+
+  const today = new Date().toISOString().slice(0, 10);
+  const { error: insertError } = await supabase.from("kpi_values").insert({
+    kpi_id: kpi.id,
+    period_start: today,
+    period_end: today,
+    value: carriedValue,
+    target_value: input.targetValue,
+  });
+  if (insertError)
+    throw new Error(`KPI目標値の更新に失敗しました: ${insertError.message}`);
+
+  const { error: updateError } = await supabase
+    .from("kpis")
+    .update({ target_value: input.targetValue })
+    .eq("id", kpi.id);
+  if (updateError)
+    throw new Error(`KPI目標値の更新に失敗しました: ${updateError.message}`);
+
+  try {
+    const { createAuditLog } = await import("./audit.server");
+    const { jpy } = await import("./company-data");
+    const previousTarget = kpi.target_value ?? carriedValue;
+    await createAuditLog({
+      actor: "JARVIS",
+      action: "Updated KPI Target",
+      target: `${kpi.name}: ${jpy(previousTarget)} → ${jpy(input.targetValue)}`,
+    });
+  } catch (auditError) {
+    console.error("audit log (kpi target updated) failed:", auditError);
+  }
 }

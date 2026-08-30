@@ -10,20 +10,33 @@ export interface ChatTurn {
   content: string;
 }
 
-/** JARVISが提案できる唯一のアクション（v1）。実行は必ずCEOの実行ボタン確認を経る。 */
+/** JARVISが提案できるアクション。実行は必ずCEOの実行ボタン確認を経る。 */
 export interface ProposedTask {
   title: string;
   assignee: EmployeeCode;
   priority?: Priority | undefined;
 }
 
+/** KPI目標値の変更提案。対象はBUSINESSカテゴリの3件のみ（KPI_TARGET_CODES参照）。 */
+export interface ProposedKpiTargetUpdate {
+  code: string;
+  targetValue: number;
+}
+
 export interface JarvisReply {
   text: string;
   proposedTask?: ProposedTask | undefined;
+  proposedKpiTargetUpdate?: ProposedKpiTargetUpdate | undefined;
 }
 
 const EMPLOYEE_CODES = new Set(["A", "B", "C", "D", "E", "F"]);
 const PRIORITIES = new Set(["P0", "P1", "P2"]);
+/**
+ * update_kpi_targetの対象を意図的にBUSINESSカテゴリの3件に絞る
+ * （QA Pass Rate等の会社健全性スコアに使うKPIを、曖昧な会話コマンドで
+ * 変更できないようにするため）。増やす場合は個別に検討すること。
+ */
+const KPI_TARGET_CODES = new Set(["monthly_revenue", "mrr", "profit"]);
 
 /**
  * モデルからの関数呼び出し引数を検証する。不正な値（存在しない担当コード等）は
@@ -45,8 +58,26 @@ function parseProposedTask(args: unknown): ProposedTask | undefined {
 }
 
 /**
- * create_task の1関数のみを公開するツール定義（Gemini functionDeclarations形式）。
- * 意図的に他の操作は一切公開しない — 増やす場合は個別に承認レベルを検討すること。
+ * update_kpi_targetの関数呼び出し引数を検証する。対象外のcodeや不正な数値は
+ * 提案自体を無効化する（実行ボタンは出さない）— create_task側と同じ考え方。
+ */
+function parseProposedKpiTargetUpdate(
+  args: unknown,
+): ProposedKpiTargetUpdate | undefined {
+  if (!args || typeof args !== "object") return undefined;
+  const a = args as Record<string, unknown>;
+  const code = typeof a["code"] === "string" ? a["code"] : "";
+  const targetValue =
+    typeof a["targetValue"] === "number" ? a["targetValue"] : NaN;
+  if (!KPI_TARGET_CODES.has(code)) return undefined;
+  if (!Number.isFinite(targetValue) || targetValue <= 0) return undefined;
+  return { code, targetValue };
+}
+
+/**
+ * JARVISが公開するツール定義（Gemini functionDeclarations形式）。ここに列挙した
+ * もの以外は一切公開しない — ホワイトリスト方式。増やす場合は個別に安全設計
+ * （対象の限定・実行ボタン確認・監査ログ）を検討すること。
  */
 const JARVIS_TOOLS = [
   {
@@ -76,9 +107,32 @@ const JARVIS_TOOLS = [
           required: ["title", "assignee"],
         },
       },
+      {
+        name: "update_kpi_target",
+        description:
+          "会社の目標値（KPIのtarget_value）を変更することを提案する。この関数を呼んだ時点ではまだ実行されず、CEOが画面上の実行ボタンを押して初めて実際に変更される。対象はMonthly Revenue（月間売上目標）・MRR（月次経常収益目標）・Profit（利益目標）の3つのみ。CEOの指示がこの3つのうちどれを指しているか一意に定まらない場合はこの関数を呼ばず、テキストでどのKPIを指すか確認の質問を返すこと。",
+        parameters: {
+          type: "OBJECT",
+          properties: {
+            code: {
+              type: "STRING",
+              enum: ["monthly_revenue", "mrr", "profit"],
+              description:
+                "変更対象のKPIコード。monthly_revenue=月間売上目標、mrr=月次経常収益(MRR)目標、profit=利益目標。",
+            },
+            targetValue: {
+              type: "NUMBER",
+              description: "新しい目標値（円、数値のみ。例: 600000）",
+            },
+          },
+          required: ["code", "targetValue"],
+        },
+      },
     ],
   },
 ];
+
+const JARVIS_TOOL_NAMES = new Set(["create_task", "update_kpi_target"]);
 
 export async function callJarvis(
   history: ChatTurn[],
@@ -192,10 +246,17 @@ async function callGemini(
   const parts = data.candidates?.[0]?.content?.parts ?? [];
 
   // 1応答につき最大1件の関数呼び出しのみ扱う（複数返ってきても最初の1件のみ）。
-  const call = parts.find((p) => p.functionCall?.name === "create_task");
-  const proposedTask = call
-    ? parseProposedTask(call.functionCall?.args)
-    : undefined;
+  const call = parts.find((p) =>
+    JARVIS_TOOL_NAMES.has(p.functionCall?.name ?? ""),
+  );
+  const proposedTask =
+    call?.functionCall?.name === "create_task"
+      ? parseProposedTask(call.functionCall.args)
+      : undefined;
+  const proposedKpiTargetUpdate =
+    call?.functionCall?.name === "update_kpi_target"
+      ? parseProposedKpiTargetUpdate(call.functionCall.args)
+      : undefined;
 
   const text =
     parts
@@ -205,7 +266,9 @@ async function callGemini(
       .trim() ||
     (proposedTask
       ? `以下の内容でタスクを作成することを提案します。内容を確認のうえ、実行ボタンを押してください。`
-      : "（応答を生成できませんでした）");
+      : proposedKpiTargetUpdate
+        ? `KPI目標値の変更を提案します。内容を確認のうえ、実行ボタンを押してください。`
+        : "（応答を生成できませんでした）");
 
-  return { text, proposedTask };
+  return { text, proposedTask, proposedKpiTargetUpdate };
 }

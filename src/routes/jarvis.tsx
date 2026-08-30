@@ -3,7 +3,11 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { Loader2, Mic, Send, Square, Volume2, VolumeX } from "lucide-react";
 import { z } from "zod";
 import { useServerFn } from "@tanstack/react-start";
-import { askJarvis, confirmJarvisTaskFn } from "@/lib/jarvis.functions";
+import {
+  askJarvis,
+  confirmJarvisKpiTargetUpdateFn,
+  confirmJarvisTaskFn,
+} from "@/lib/jarvis.functions";
 import type { JarvisMode } from "@/lib/jarvis-prompt";
 import { useVoiceInput, useVoiceOutput } from "@/lib/voice";
 import { cn } from "@/lib/utils";
@@ -56,11 +60,17 @@ export const Route = createFileRoute("/jarvis")({
   component: JarvisPage,
 });
 
-/** JARVISが会話から提案する、唯一のアクション（v1）。実行はCEOの実行ボタン確認を経る。 */
+/** JARVISが会話から提案するアクション。実行はCEOの実行ボタン確認を経る。 */
 interface ProposedTask {
   title: string;
   assignee: EmployeeCode;
   priority?: Priority | undefined;
+}
+
+/** KPI目標値の変更提案。対象はBUSINESSカテゴリの3件のみ（jarvis.server.ts参照）。 */
+interface ProposedKpiTargetUpdate {
+  code: string;
+  targetValue: number;
 }
 
 interface Message {
@@ -78,6 +88,13 @@ interface Message {
     | { status: "done"; taskId: string }
     | { status: "failed"; message: string }
     | undefined;
+  proposedKpiTargetUpdate?: ProposedKpiTargetUpdate | undefined;
+  /** 実行ボタンを押した後の状態。"executing"中は多重クリックを防ぐ。 */
+  kpiTargetExecution?:
+    | { status: "executing" }
+    | { status: "done" }
+    | { status: "failed"; message: string }
+    | undefined;
 }
 
 /**
@@ -92,8 +109,9 @@ function JarvisPage() {
   const { q } = Route.useSearch();
   const ask = useServerFn(askJarvis);
   const confirmTask = useServerFn(confirmJarvisTaskFn);
+  const confirmKpiTargetUpdate = useServerFn(confirmJarvisKpiTargetUpdateFn);
   const { tasks } = useTasks();
-  const { kpis } = useKpis();
+  const { kpis, refresh: refreshKpis } = useKpis();
   const { monthlyTotal: monthlyRevenue, goal: revenueGoal } = useRevenue();
   const { states: liveStates } = useEmployeeLiveStates();
   const [messages, setMessages] = useState<Message[]>([
@@ -142,14 +160,16 @@ function JarvisPage() {
     ];
 
     void ask({ data: { messages: historyRef.current, mode: effectiveMode } })
-      .then(({ reply, proposedTask }) => {
+      .then(({ reply, proposedTask, proposedKpiTargetUpdate }) => {
         historyRef.current = [
           ...historyRef.current,
           { role: "assistant", content: reply },
         ];
         setMessages((m) =>
           m.map((x) =>
-            x.id === jarvisId ? { ...x, text: reply, proposedTask } : x,
+            x.id === jarvisId
+              ? { ...x, text: reply, proposedTask, proposedKpiTargetUpdate }
+              : x,
           ),
         );
         void voiceOut.speak(reply);
@@ -164,6 +184,7 @@ function JarvisPage() {
                   ...x,
                   text: `⚠️ ${msg}`,
                   proposedTask: undefined,
+                  proposedKpiTargetUpdate: undefined,
                   error: true,
                 }
               : x,
@@ -209,6 +230,44 @@ function JarvisPage() {
           m.map((x) =>
             x.id === messageId
               ? { ...x, taskExecution: { status: "failed", message: msg } }
+              : x,
+          ),
+        );
+      });
+  };
+
+  /** JARVISが提案したKPI目標値の変更を、CEOの実行ボタン確認を経て実際に反映する。 */
+  const executeProposedKpiTargetUpdate = (
+    messageId: number,
+    update: ProposedKpiTargetUpdate,
+  ) => {
+    setMessages((m) =>
+      m.map((x) =>
+        x.id === messageId
+          ? { ...x, kpiTargetExecution: { status: "executing" } }
+          : x,
+      ),
+    );
+    void confirmKpiTargetUpdate({ data: update })
+      .then(() => {
+        setMessages((m) =>
+          m.map((x) =>
+            x.id === messageId
+              ? { ...x, kpiTargetExecution: { status: "done" } }
+              : x,
+          ),
+        );
+        void refreshKpis();
+      })
+      .catch((err: unknown) => {
+        const msg =
+          err instanceof Error
+            ? err.message
+            : "KPI目標値の変更に失敗しました。";
+        setMessages((m) =>
+          m.map((x) =>
+            x.id === messageId
+              ? { ...x, kpiTargetExecution: { status: "failed", message: msg } }
               : x,
           ),
         );
@@ -353,6 +412,65 @@ function JarvisPage() {
                               {m.taskExecution?.status === "failed" ? (
                                 <span className="text-xs text-destructive">
                                   ⚠️ {m.taskExecution.message}
+                                </span>
+                              ) : null}
+                            </div>
+                          )}
+                        </div>
+                      ) : null}
+                      {m.proposedKpiTargetUpdate ? (
+                        <div className="rounded-2xl border border-border bg-secondary/30 p-4">
+                          <p className="label-caps">KPI目標値変更の提案</p>
+                          <div className="mt-3 flex flex-wrap items-center gap-3 text-sm">
+                            <span className="font-semibold">
+                              {kpis.find(
+                                (k) =>
+                                  k.code === m.proposedKpiTargetUpdate!.code,
+                              )?.name ?? m.proposedKpiTargetUpdate.code}
+                            </span>
+                            <span className="num-display text-muted-foreground">
+                              {kpis.find(
+                                (k) =>
+                                  k.code === m.proposedKpiTargetUpdate!.code,
+                              )?.target ?? "—"}
+                            </span>
+                            <span className="text-muted-foreground">→</span>
+                            <span className="num-display font-semibold text-primary">
+                              {jpy(m.proposedKpiTargetUpdate.targetValue)}
+                            </span>
+                          </div>
+
+                          {m.kpiTargetExecution?.status === "done" ? (
+                            <p className="mt-4 text-sm text-success">
+                              ✅ 目標値を変更しました。
+                              <Link
+                                to="/kpi"
+                                className="ml-1 underline underline-offset-2"
+                              >
+                                KPIを開く
+                              </Link>
+                            </p>
+                          ) : (
+                            <div className="mt-4 flex items-center gap-2">
+                              <button
+                                onClick={() =>
+                                  executeProposedKpiTargetUpdate(
+                                    m.id,
+                                    m.proposedKpiTargetUpdate!,
+                                  )
+                                }
+                                disabled={
+                                  m.kpiTargetExecution?.status === "executing"
+                                }
+                                className="rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50"
+                              >
+                                {m.kpiTargetExecution?.status === "executing"
+                                  ? "変更しています…"
+                                  : "実行（目標値を変更）"}
+                              </button>
+                              {m.kpiTargetExecution?.status === "failed" ? (
+                                <span className="text-xs text-destructive">
+                                  ⚠️ {m.kpiTargetExecution.message}
                                 </span>
                               ) : null}
                             </div>

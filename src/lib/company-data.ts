@@ -677,6 +677,9 @@ export const TASKS: Task[] = [
 ];
 
 export interface Kpi {
+  /** kpis.code（例: "monthly_revenue"）。JARVISのupdate_kpi_targetが対象KPIを一意に指すのに使う。
+   *  Supabase kpi.server.ts から算出（company-data.ts の KPIS モックは未設定）。 */
+  code?: string;
   name: string;
   category:
     "BUSINESS" | "PRODUCT" | "MARKETING" | "SALES" | "DIAGNOSIS" | "AI COMPANY";
