@@ -6,6 +6,7 @@ import { OfficeFloor } from "@/components/os/OfficeFloor";
 import {
   Delta,
   DemoDataBadge,
+  EmptyState,
   Meter,
   Panel,
   SectionTitle,
@@ -21,6 +22,11 @@ import { useEmployeeLiveStates } from "@/lib/use-employee-live-states";
 import { useApprovals } from "@/lib/use-approvals";
 import { useCompanyHealth } from "@/lib/use-company-health";
 import { useRevenue } from "@/lib/use-revenue";
+import {
+  auditActionLabel,
+  auditActorColor,
+  useAuditLogs,
+} from "@/lib/use-audit";
 import type { EventKind, EventOwner } from "@/lib/calendar.server";
 import {
   ALERTS,
@@ -173,6 +179,7 @@ function HqPage() {
     [KPIS],
   );
   const { monthlyTotal: monthlyRevenue, goal: revenueGoal } = useRevenue();
+  const { logs: auditLogs } = useAuditLogs();
   const revenuePct =
     revenueGoal && revenueGoal > 0
       ? Math.round((monthlyRevenue / revenueGoal) * 100)
@@ -722,26 +729,35 @@ function HqPage() {
       <section className="mt-8">
         <SectionTitle
           title="全社アクティビティ"
-          hint="DEMO MODE · 会社ログはリアルタイムで更新されます"
+          hint="監査ログ（audit_logs）と連動しています"
         />
         <Panel>
-          <ol className="relative space-y-4 border-l border-border pl-5">
-            {sim.activity.map((a) => (
-              <li key={a.id} className="relative">
-                <span
-                  className="absolute -left-[27px] top-1.5 size-2.5 rounded-full ring-4 ring-[var(--card)]"
-                  style={{ background: empColor(a.actor) }}
-                />
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="num-display text-xs text-muted-foreground">
-                    {a.at}
-                  </span>
-                  <Tag tone={empColor(a.actor)}>{a.actor}</Tag>
-                  <span className="text-sm">{a.text}</span>
-                </div>
-              </li>
-            ))}
-          </ol>
+          {auditLogs.length ? (
+            <ol className="relative space-y-4 border-l border-border pl-5">
+              {auditLogs.slice(0, 8).map((l) => (
+                <li key={l.id} className="relative">
+                  <span
+                    className="absolute -left-[27px] top-1.5 size-2.5 rounded-full ring-4 ring-[var(--card)]"
+                    style={{ background: auditActorColor(l.actor) }}
+                  />
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="num-display text-xs text-muted-foreground">
+                      {l.createdAt.replace("T", " ").slice(11, 16)}
+                    </span>
+                    <Tag tone={auditActorColor(l.actor)}>{l.actor}</Tag>
+                    <span className="text-sm">
+                      {auditActionLabel(l.action)}：{l.target}
+                    </span>
+                  </div>
+                </li>
+              ))}
+            </ol>
+          ) : (
+            <EmptyState
+              title="記録がありません"
+              body="タスクの作成・承認の申請/決定・経費/売上の記帳を行うと、ここに記録されます。"
+            />
+          )}
         </Panel>
       </section>
 

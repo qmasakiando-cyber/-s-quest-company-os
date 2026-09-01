@@ -14,6 +14,7 @@ import { cn } from "@/lib/utils";
 import { AppShell } from "@/components/os/AppShell";
 import { JarvisCore } from "@/components/os/JarvisCore";
 import {
+  EmptyState,
   Panel,
   PageHeader,
   SectionTitle,
@@ -26,7 +27,11 @@ import { useKpis } from "@/lib/use-kpis";
 import { useEmployeeLiveStates } from "@/lib/use-employee-live-states";
 import { useRevenue } from "@/lib/use-revenue";
 import {
-  ACTIVITY,
+  auditActionLabel,
+  auditActorColor,
+  useAuditLogs,
+} from "@/lib/use-audit";
+import {
   EMPLOYEES,
   JARVIS_EXAMPLES,
   QUICK_ACTIONS,
@@ -114,6 +119,7 @@ function JarvisPage() {
   const { kpis, refresh: refreshKpis } = useKpis();
   const { monthlyTotal: monthlyRevenue, goal: revenueGoal } = useRevenue();
   const { states: liveStates } = useEmployeeLiveStates();
+  const { logs: auditLogs } = useAuditLogs();
   const [messages, setMessages] = useState<Message[]>([
     {
       id: 1,
@@ -696,19 +702,26 @@ function JarvisPage() {
 
           <Panel>
             <SectionTitle title="アクションコンソール" hint="直近の実行ログ" />
-            <ol className="space-y-3 text-xs">
-              {ACTIVITY.slice(0, 6).map((a) => (
-                <li key={a.at + a.text} className="flex gap-2">
-                  <span className="num-display text-muted-foreground">
-                    {a.at}
-                  </span>
-                  <Tag tone={empColor(a.actor)}>{a.actor}</Tag>
-                  <span className="min-w-0 flex-1 text-foreground/80">
-                    {a.text}
-                  </span>
-                </li>
-              ))}
-            </ol>
+            {auditLogs.length ? (
+              <ol className="space-y-3 text-xs">
+                {auditLogs.slice(0, 6).map((l) => (
+                  <li key={l.id} className="flex gap-2">
+                    <span className="num-display text-muted-foreground">
+                      {l.createdAt.replace("T", " ").slice(11, 16)}
+                    </span>
+                    <Tag tone={auditActorColor(l.actor)}>{l.actor}</Tag>
+                    <span className="min-w-0 flex-1 text-foreground/80">
+                      {auditActionLabel(l.action)}：{l.target}
+                    </span>
+                  </li>
+                ))}
+              </ol>
+            ) : (
+              <EmptyState
+                title="記録がありません"
+                body="タスクの作成・承認の申請/決定・経費/売上の記帳を行うと、ここに記録されます。"
+              />
+            )}
           </Panel>
         </aside>
       </div>

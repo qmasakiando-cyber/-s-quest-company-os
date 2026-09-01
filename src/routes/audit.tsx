@@ -7,7 +7,7 @@ import {
   SectionTitle,
   Tag,
 } from "@/components/os/primitives";
-import { useAuditLogs } from "@/lib/use-audit";
+import { auditActorColor, useAuditLogs } from "@/lib/use-audit";
 import { useCompanyOsEntries } from "@/lib/use-company-os";
 
 export const Route = createFileRoute("/audit")({
@@ -29,9 +29,6 @@ export const Route = createFileRoute("/audit")({
   }),
   component: AuditPage,
 });
-
-const actorTone = (actor: string) =>
-  actor === "JARVIS" ? "var(--primary)" : "var(--emp-d)";
 
 function AuditPage() {
   const { logs, loading, error } = useAuditLogs();
@@ -79,7 +76,7 @@ function AuditPage() {
                       {l.createdAt.replace("T", " ").slice(0, 16)}
                     </td>
                     <td className="px-4 py-3">
-                      <Tag tone={actorTone(l.actor)}>{l.actor}</Tag>
+                      <Tag tone={auditActorColor(l.actor)}>{l.actor}</Tag>
                     </td>
                     <td className="px-4 py-3">{l.action}</td>
                     <td className="px-4 py-3 text-muted-foreground">
